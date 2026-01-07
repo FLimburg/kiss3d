@@ -16,7 +16,7 @@ graphics library are:
 It is designed to be able to draw simple geometric figures and play with them
 with one-liners.
 
-An on-line version of this documentation is available [here](http://kiss3d.org).
+An on-line version of this documentation is available [here](http://kiss3d.rs).
 
 ## Features
 Most features are one-liners.
@@ -90,7 +90,7 @@ Thanks to all the Rustaceans for their help, and their OpenGL bindings.
 #![allow(non_upper_case_globals)]
 #![allow(unused_unsafe)] // TODO: should be denied
 #![allow(missing_copy_implementations)]
-#![doc(html_root_url = "http://kiss3d.org/doc")]
+#![doc(html_root_url = "http://kiss3d.rs/doc")]
 #![allow(clippy::module_inception)]
 #![allow(clippy::too_many_arguments)]
 #![allow(clippy::type_complexity)]
