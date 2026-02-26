@@ -34,9 +34,9 @@ async fn main() {
         .format_timestamp_millis()
         .init();
 
-    println!("\n╔══════════════════════════════════════════════════════════════════╗");
-    println!("║         DRM Display Output Test - Phase 3                       ║");
-    println!("╚══════════════════════════════════════════════════════════════════╝\n");
+    println!("\n╔════════════════════════════════════════════╗");
+    println!("║         DRM Display Output Test            ║");
+    println!("╚════════════════════════════════════════════╝\n");
 
     // Try to open DRM device
     let device_path = std::env::var("DRM_DEVICE").unwrap_or_else(|_| "/dev/dri/card0".to_string());
@@ -58,7 +58,7 @@ async fn main() {
 
     // Create DRM window with display output
     println!("🎬 Creating DRM window with display output...");
-    let mut window = match DRMWindow::new(&device_path, width, height).await {
+    let mut window = match DRMWindow::new(&device_path).await {
         Ok(w) => {
             println!("✅ DRM window created successfully!");
             w
@@ -103,9 +103,9 @@ async fn main() {
 
     println!("✅ Scene created with 3 colored cubes");
     println!();
-    println!("╔══════════════════════════════════════════════════════════════════╗");
+    println!("╔═════════════════════════════════════════════════════════════════╗");
     println!("║  🎉 DISPLAY OUTPUT ACTIVE - You should see rotating cubes! 🎉   ║");
-    println!("╚══════════════════════════════════════════════════════════════════╝");
+    println!("╚═════════════════════════════════════════════════════════════════╝");
     println!();
     println!("Rendering for 10 seconds...");
     println!("Press Ctrl+C to stop early");
@@ -148,9 +148,9 @@ async fn main() {
     let avg_fps = frame_count as f64 / total_time.as_secs_f64();
 
     println!();
-    println!("╔══════════════════════════════════════════════════════════════════╗");
-    println!("║                    Test Complete!                               ║");
-    println!("╚══════════════════════════════════════════════════════════════════╝");
+    println!("╔═══════════════════════════════════════════════════════╗");
+    println!("║                    Test Complete!                     ║");
+    println!("╚═══════════════════════════════════════════════════════╝");
     println!();
     println!("Statistics:");
     println!("  Total frames rendered: {}", frame_count);

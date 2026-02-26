@@ -18,19 +18,12 @@ use drm::control::{connector, crtc, Device as ControlDevice, Mode, ResourceHandl
 #[cfg(feature = "drm")]
 #[derive(Debug)]
 pub enum DrmCanvasError {
-    /// Failed to request wgpu device.
     DeviceRequest(String),
-    /// General initialization error.
     Init(String),
-    /// DRM-specific errors.
     DrmError(String),
-    /// Display configuration errors.
     ModesetError(String),
-    /// Page flip failures.
     PageFlipError(String),
-    /// File I/O errors.
     IoError(std::io::Error),
-    /// No connected display found.
     NoConnectedDisplay,
 }
 
@@ -500,10 +493,6 @@ impl Drop for DrmCanvas {
         }
     }
 }
-
-// ============================================================================
-// Phase 1: Display Resource Query Functions
-// ============================================================================
 
 #[cfg(feature = "drm")]
 impl DrmCanvas {

@@ -32,34 +32,12 @@ async fn main() {
     println!("║     DRM Cubes       ║");
     println!("╚═════════════════════╝\n");
 
-    // Try to open DRM device
-    let device_path = std::env::var("DRM_DEVICE").unwrap_or_else(|_| "/dev/dri/card0".to_string());
-    let width: u32 = 1024;
-    let height: u32 = 600;
-
-    println!(
-        "📺 Opening DRM device: {} at {}x{}",
-        device_path, width, height
-    );
-    println!();
-
     // Create DRM window with display output (uses async display thread automatically)
     println!("🎬 Creating DRM window ...");
-    let mut window = match DRMWindow::new(&device_path, width, height).await {
-        Ok(w) => {
-            println!("✅ DRM window created successfully!");
-            w
-        }
-        Err(e) => {
-            eprintln!("❌ Failed to create DRM window: {}", e);
-            eprintln!();
-            eprintln!("Troubleshooting:");
-            eprintln!("  - Ensure you're running as root or in video/render group");
-            eprintln!("  - Check that {} exists", device_path);
-            eprintln!("  - Verify a display is connected");
-            return;
-        }
-    };
+    let mut window = DRMWindow::try_new().await;
+    println!("✅ DRM window created successfully!");
+    let (width, height) = window.size();
+    println!("  Resolution: {}x{}", width, height);
 
     println!();
     println!("🎨 Setting up benchmark scene...");
@@ -114,15 +92,14 @@ async fn main() {
     let benchmark_frames = 300;
     let total_frames = warmup_frames + benchmark_frames;
 
-    println!("╔══════════════════════════════════════════════════════════════════╗");
-    println!("║                    Starting Benchmark                           ║");
-    println!("╚══════════════════════════════════════════════════════════════════╝");
+    println!("╔══════════════════════════════════════════════════════════════╗");
+    println!("║                    Starting Benchmark                        ║");
+    println!("╚══════════════════════════════════════════════════════════════╝");
     println!();
     println!("Configuration:");
     println!("  Scene complexity: {} cubes", total_cubes);
     println!("  Warmup frames: {}", warmup_frames);
     println!("  Benchmark frames: {}", benchmark_frames);
-    println!("  Resolution: {}x{}", width, height);
     println!();
     println!("Running...");
     println!();
@@ -206,9 +183,9 @@ async fn main() {
     let p99_frame = sorted_frame[sorted_frame.len() * 99 / 100];
 
     println!();
-    println!("╔══════════════════════════════════════════════════════════════════╗");
-    println!("║                    Benchmark Results                            ║");
-    println!("╚══════════════════════════════════════════════════════════════════╝");
+    println!("╔══════════════════════════════════════════════════════════════╗");
+    println!("║                    Benchmark Results                         ║");
+    println!("╚══════════════════════════════════════════════════════════════╝");
     println!();
     println!("Overall Performance:");
     println!("  Total time: {:.2}s", total_time.as_secs_f64());

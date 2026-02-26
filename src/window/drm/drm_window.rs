@@ -73,13 +73,11 @@ impl DRMWindow {
     ///     }
     /// }
     /// ```
-    pub async fn new(device_path: &str, width: u32, height: u32) -> Result<Self, Box<dyn Error>> {
-        log::info!("Creating DRM window with display: {}x{}", width, height);
-
+    pub async fn new(device_path: &str) -> Result<Self, Box<dyn Error>> {
         // Create DRM canvas with display output (initializes wgpu headless + DRM/KMS)
         let drm_canvas = DrmCanvas::new_with_display(device_path).await?;
 
-        Self::new_from_canvas(drm_canvas, width, height).await
+        Self::new_from_canvas(drm_canvas).await
     }
 
     /// Creates a new DRM window for offscreen-only rendering (no display output).
@@ -101,20 +99,17 @@ impl DRMWindow {
         // Create DRM canvas in offscreen mode (no display initialization, no DRM device needed)
         let drm_canvas = DrmCanvas::new(width, height).await?;
 
-        Self::new_from_canvas(drm_canvas, width, height).await
+        Self::new_from_canvas(drm_canvas).await
     }
 
     /// Internal helper to initialize DRMWindow from a DrmCanvas
-    async fn new_from_canvas(
-        drm_canvas: DrmCanvas,
-        width: u32,
-        height: u32,
-    ) -> Result<Self, Box<dyn Error>> {
+    async fn new_from_canvas(drm_canvas: DrmCanvas) -> Result<Self, Box<dyn Error>> {
         // Initialize window cache (material manager, mesh manager, texture manager)
         WindowCache::populate();
 
         // Create framebuffer manager
         let framebuffer_manager = FramebufferManager::new();
+        let (width, height) = drm_canvas.size();
         let post_process_render_target = framebuffer_manager.new_render_target(width, height, true);
 
         log::info!("DRM window initialized successfully");
@@ -131,6 +126,31 @@ impl DRMWindow {
             ambient_intensity: 0.2,
             background: BLACK,
         })
+    }
+
+    pub async fn try_new() -> Self {
+        let device_paths = [
+            "/dev/dri/card0",
+            "/dev/dri/card1",
+            "/dev/dri/card2",
+            "/dev/dri/renderD128",
+            "/dev/dri/renderD129",
+        ];
+        for dev in device_paths {
+            match Self::new(dev).await {
+                Ok(window) => {
+                    log::debug!("Created render target for device {dev}");
+                    return window;
+                }
+                Err(e) => {
+                    log::trace!("Could not created render target for device {dev}: {e}");
+                    continue;
+                }
+            }
+        }
+
+        log::error!("Could not create any render target!");
+        panic!("Could not create any render target!");
     }
 
     /// Returns the width of the render target.
