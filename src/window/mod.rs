@@ -1,6 +1,8 @@
 //! The window, and things to handle the rendering loop and events.
 
 mod canvas;
+pub mod canvas_traits;
+mod canvas_utils;
 mod drawing;
 #[cfg(feature = "drm")]
 mod drm;
@@ -18,6 +20,7 @@ mod window;
 mod window_cache;
 
 pub use canvas::{Canvas, CanvasSetup, NumSamples};
+pub use canvas_traits::{CameraCanvas, RenderCanvas, ScreenshotCanvas, WindowCanvas};
 #[cfg(feature = "drm")]
 pub use drm::Window;
 #[cfg(feature = "recording")]

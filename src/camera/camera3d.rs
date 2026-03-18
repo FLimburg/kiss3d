@@ -1,5 +1,5 @@
 use crate::event::WindowEvent;
-use crate::window::Canvas;
+use crate::window::canvas_traits::CameraCanvas;
 use glamx::{Mat4, Pose3, Vec2, Vec3, Vec4, Vec4Swizzles};
 
 /// Trait that all camera implementations must implement.
@@ -29,7 +29,7 @@ pub trait Camera3d {
     /// # Arguments
     /// * `canvas` - Reference to the rendering canvas
     /// * `event` - The window event to handle
-    fn handle_event(&mut self, canvas: &Canvas, event: &WindowEvent);
+    fn handle_event(&mut self, canvas: &dyn CameraCanvas, event: &WindowEvent);
 
     // ==================
     // Transformation-related methods
@@ -88,7 +88,7 @@ pub trait Camera3d {
     ///
     /// # Arguments
     /// * `canvas` - Reference to the rendering canvas
-    fn update(&mut self, canvas: &Canvas);
+    fn update(&mut self, canvas: &dyn CameraCanvas);
 
     /// Returns the view and projection matrices for a given rendering pass.
     ///
@@ -125,7 +125,7 @@ pub trait Camera3d {
     /// * `pass` - The index of the pass being started
     /// * `canvas` - Reference to the rendering canvas
     #[inline]
-    fn start_pass(&self, _pass: usize, _canvas: &Canvas) {}
+    fn start_pass(&self, _pass: usize, _canvas: &dyn CameraCanvas) {}
 
     /// Called after the scene has been rendered, before post-processing.
     ///
@@ -134,7 +134,7 @@ pub trait Camera3d {
     /// # Arguments
     /// * `canvas` - Reference to the rendering canvas
     #[inline]
-    fn render_complete(&self, _canvas: &Canvas) {}
+    fn render_complete(&self, _canvas: &dyn CameraCanvas) {}
 
     /// Projects a 3D point in world coordinates to 2D screen coordinates.
     ///

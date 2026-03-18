@@ -1,6 +1,7 @@
 use std::sync::mpsc::Sender;
 
 use crate::event::{Action, Key, MouseButton, WindowEvent};
+use crate::window::canvas_traits::{RenderCanvas, ScreenshotCanvas, WindowCanvas};
 use crate::window::WgpuCanvas;
 use image::{GenericImage, Pixel};
 
@@ -175,5 +176,109 @@ impl Canvas {
     /// Returns RGB data (3 bytes per pixel).
     pub fn read_pixels(&self, out: &mut Vec<u8>, x: usize, y: usize, width: usize, height: usize) {
         self.canvas.read_pixels(out, x, y, width, height)
+    }
+}
+
+// Trait implementations for Canvas (delegating to WgpuCanvas)
+
+impl RenderCanvas for Canvas {
+    type Frame<'a>
+        = wgpu::SurfaceTexture
+    where
+        Self: 'a;
+    type Error = wgpu::SurfaceError;
+
+    fn get_current_texture(&self) -> Result<Self::Frame<'_>, Self::Error> {
+        self.canvas.get_current_texture()
+    }
+
+    fn present(&self, frame: Self::Frame<'_>) -> Result<(), Self::Error> {
+        self.canvas.present(frame);
+        Ok(())
+    }
+
+    fn depth_view(&self) -> &wgpu::TextureView {
+        self.canvas.depth_view()
+    }
+
+    fn msaa_view(&self) -> Option<&wgpu::TextureView> {
+        self.canvas.msaa_view()
+    }
+
+    fn sample_count(&self) -> u32 {
+        self.canvas.sample_count()
+    }
+
+    fn surface_format(&self) -> wgpu::TextureFormat {
+        self.canvas.surface_format()
+    }
+
+    fn size(&self) -> (u32, u32) {
+        self.canvas.size()
+    }
+}
+
+impl ScreenshotCanvas for Canvas {
+    type Frame<'a>
+        = wgpu::SurfaceTexture
+    where
+        Self: 'a;
+
+    fn copy_frame_to_readback(&self, frame: &Self::Frame<'_>) {
+        self.canvas.copy_frame_to_readback(frame)
+    }
+
+    fn read_pixels(&self, out: &mut Vec<u8>, x: usize, y: usize, width: usize, height: usize) {
+        self.canvas.read_pixels(out, x, y, width, height)
+    }
+}
+
+impl WindowCanvas for Canvas {
+    fn poll_events(&mut self) {
+        self.canvas.poll_events()
+    }
+
+    fn cursor_pos(&self) -> Option<(f64, f64)> {
+        self.canvas.cursor_pos()
+    }
+
+    fn scale_factor(&self) -> f64 {
+        self.canvas.scale_factor()
+    }
+
+    fn set_title(&mut self, title: &str) {
+        self.canvas.set_title(title)
+    }
+
+    fn set_icon(&mut self, icon: impl GenericImage<Pixel = impl Pixel<Subpixel = u8>>) {
+        self.canvas.set_icon(icon)
+    }
+
+    fn set_cursor_grab(&self, grab: bool) {
+        self.canvas.set_cursor_grab(grab)
+    }
+
+    fn set_cursor_position(&self, x: f64, y: f64) {
+        self.canvas.set_cursor_position(x, y)
+    }
+
+    fn hide_cursor(&self, hide: bool) {
+        self.canvas.hide_cursor(hide)
+    }
+
+    fn hide(&mut self) {
+        self.canvas.hide()
+    }
+
+    fn show(&mut self) {
+        self.canvas.show()
+    }
+
+    fn get_mouse_button(&self, button: MouseButton) -> Action {
+        self.canvas.get_mouse_button(button)
+    }
+
+    fn get_key(&self, key: Key) -> Action {
+        self.canvas.get_key(key)
     }
 }

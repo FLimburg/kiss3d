@@ -2,6 +2,8 @@
 
 use crate::context::Context;
 use crate::resource::OffscreenBuffers;
+use crate::window::canvas_traits::{RenderCanvas, ScreenshotCanvas};
+use crate::window::canvas_utils::{pixel_reading, texture_utils};
 use std::error::Error;
 use std::fmt;
 
@@ -401,6 +403,11 @@ impl DrmCanvas {
         1
     }
 
+    /// Returns the scale factor (always 1.0 for headless rendering).
+    pub fn scale_factor(&self) -> f64 {
+        1.0
+    }
+
     /// Reads pixels from the offscreen framebuffer into a buffer.
     ///
     /// This captures the current rendered frame as RGB pixel data.
@@ -413,88 +420,16 @@ impl DrmCanvas {
     /// * `width` - The width of the region to read
     /// * `height` - The height of the region to read
     pub fn read_pixels(&self, out: &mut Vec<u8>, x: usize, y: usize, width: usize, height: usize) {
-        let ctxt = Context::get();
-
-        // Calculate buffer size with alignment
-        // wgpu requires rows to be aligned to 256 bytes
-        let bytes_per_pixel = 4; // RGBA
-        let unpadded_bytes_per_row = width * bytes_per_pixel;
-        let align = wgpu::COPY_BYTES_PER_ROW_ALIGNMENT as usize;
-        let padded_bytes_per_row = unpadded_bytes_per_row.div_ceil(align) * align;
-        let buffer_size = padded_bytes_per_row * height;
-
-        // Create staging buffer
-        let staging_buffer = ctxt.create_buffer(&wgpu::BufferDescriptor {
-            label: Some("drm_screenshot_staging_buffer"),
-            size: buffer_size as u64,
-            usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
-            mapped_at_creation: false,
-        });
-
-        // Copy from offscreen texture to staging buffer
-        let mut encoder = ctxt.create_command_encoder(Some("drm_screenshot_copy_encoder"));
-
-        encoder.copy_texture_to_buffer(
-            wgpu::TexelCopyTextureInfo {
-                texture: &self.offscreen_buffers.color_texture,
-                mip_level: 0,
-                origin: wgpu::Origin3d {
-                    x: x as u32,
-                    y: y as u32,
-                    z: 0,
-                },
-                aspect: wgpu::TextureAspect::All,
-            },
-            wgpu::TexelCopyBufferInfo {
-                buffer: &staging_buffer,
-                layout: wgpu::TexelCopyBufferLayout {
-                    offset: 0,
-                    bytes_per_row: Some(padded_bytes_per_row as u32),
-                    rows_per_image: Some(height as u32),
-                },
-            },
-            wgpu::Extent3d {
-                width: width as u32,
-                height: height as u32,
-                depth_or_array_layers: 1,
-            },
-        );
-
-        ctxt.submit(std::iter::once(encoder.finish()));
-
-        // Map the buffer and read the data
-        let buffer_slice = staging_buffer.slice(..);
-        let (tx, rx) = std::sync::mpsc::channel();
-        buffer_slice.map_async(wgpu::MapMode::Read, move |result| {
-            tx.send(result).unwrap();
-        });
-
-        // Wait for the GPU to finish
-        let _ = ctxt.device.poll(wgpu::PollType::wait_indefinitely());
-        rx.recv().unwrap().unwrap();
-
-        // Read the data
-        let data = buffer_slice.get_mapped_range();
-
-        // Convert from RGBA to RGB and handle row padding
-        let rgb_size = width * height * 3;
-        out.clear();
-        out.reserve(rgb_size);
-
-        // Read rows in reverse order for bottom-left origin compatibility
-        for row in (0..height).rev() {
-            let row_start = row * padded_bytes_per_row;
-            for col in 0..width {
-                let pixel_start = row_start + col * bytes_per_pixel;
-                // RGBA -> RGB
-                out.push(data[pixel_start]); // R
-                out.push(data[pixel_start + 1]); // G
-                out.push(data[pixel_start + 2]); // B
-            }
-        }
-
-        drop(data);
-        staging_buffer.unmap();
+        pixel_reading::read_texture_to_rgb(
+            &self.offscreen_buffers.color_texture,
+            out,
+            x,
+            y,
+            width,
+            height,
+            self.surface_config.format,
+            "drm_screenshot",
+        )
     }
 
     /// Creates a readback texture for screenshots
@@ -504,20 +439,13 @@ impl DrmCanvas {
         height: u32,
         format: wgpu::TextureFormat,
     ) -> wgpu::Texture {
-        device.create_texture(&wgpu::TextureDescriptor {
-            label: Some("drm_readback_texture"),
-            size: wgpu::Extent3d {
-                width,
-                height,
-                depth_or_array_layers: 1,
-            },
-            mip_level_count: 1,
-            sample_count: 1,
-            dimension: wgpu::TextureDimension::D2,
+        texture_utils::create_readback_texture(
+            device,
+            width,
+            height,
             format,
-            usage: wgpu::TextureUsages::COPY_DST | wgpu::TextureUsages::COPY_SRC,
-            view_formats: &[],
-        })
+            "drm_readback_texture",
+        )
     }
 }
 
@@ -672,91 +600,147 @@ impl DrmCanvas {
     ) -> Result<(), DrmCanvasError> {
         log::debug!("Reading GPU texture to CPU buffer");
 
-        let ctxt = Context::get();
-
-        // Calculate buffer layout with proper alignment
-        let bytes_per_pixel = 4; // RGBA/XRGB
-        let unpadded_bytes_per_row = width as usize * bytes_per_pixel;
-        let align = wgpu::COPY_BYTES_PER_ROW_ALIGNMENT as usize;
-        let padded_bytes_per_row = unpadded_bytes_per_row.div_ceil(align) * align;
-        let buffer_size = padded_bytes_per_row * height as usize;
-
-        // Create staging buffer for GPU -> CPU transfer
-        let staging_buffer = ctxt.create_buffer(&wgpu::BufferDescriptor {
-            label: Some("drm_frame_read_staging"),
-            size: buffer_size as u64,
-            usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
-            mapped_at_creation: false,
-        });
-
-        // Copy texture to staging buffer
-        let mut encoder = ctxt.create_command_encoder(Some("drm_frame_read_encoder"));
-        encoder.copy_texture_to_buffer(
-            wgpu::TexelCopyTextureInfo {
-                texture,
-                mip_level: 0,
-                origin: wgpu::Origin3d::ZERO,
-                aspect: wgpu::TextureAspect::All,
-            },
-            wgpu::TexelCopyBufferInfo {
-                buffer: &staging_buffer,
-                layout: wgpu::TexelCopyBufferLayout {
-                    offset: 0,
-                    bytes_per_row: Some(padded_bytes_per_row as u32),
-                    rows_per_image: Some(height),
-                },
-            },
-            wgpu::Extent3d {
-                width,
-                height,
-                depth_or_array_layers: 1,
-            },
-        );
-        ctxt.submit(std::iter::once(encoder.finish()));
-
-        // Map staging buffer and read data
-        let buffer_slice = staging_buffer.slice(..);
-        let (tx, rx) = std::sync::mpsc::channel();
-        buffer_slice.map_async(wgpu::MapMode::Read, move |result| {
-            tx.send(result).unwrap();
-        });
-
-        // Wait for GPU to finish
-        let _ = ctxt.device.poll(wgpu::PollType::wait_indefinitely());
-        rx.recv()
-            .map_err(|e| {
-                DrmCanvasError::Init(format!("Failed to receive buffer map result: {}", e))
-            })?
-            .map_err(|e| DrmCanvasError::Init(format!("Failed to map staging buffer: {}", e)))?;
-
-        let mapped_data = buffer_slice.get_mapped_range();
-
-        // Resize output buffer if needed
-        let stride = (width * 4) as usize; // 4 bytes per pixel
-        let output_size = stride * height as usize;
-        buffer.resize(output_size, 0);
-
-        // Copy data, handling potential stride differences
-        if padded_bytes_per_row == stride {
-            // Fast path: strides match, copy entire buffer at once
-            buffer[..output_size].copy_from_slice(&mapped_data[..output_size]);
-        } else {
-            // Slow path: different strides, copy row by row
-            for y in 0..height as usize {
-                let src_row_start = y * padded_bytes_per_row;
-                let dst_row_start = y * stride;
-                buffer[dst_row_start..dst_row_start + stride]
-                    .copy_from_slice(&mapped_data[src_row_start..src_row_start + stride]);
-            }
-        }
-
-        drop(mapped_data);
-        staging_buffer.unmap();
+        pixel_reading::read_texture_to_buffer(texture, buffer, width, height)
+            .map_err(|e| DrmCanvasError::Init(e))?;
 
         log::debug!("GPU texture read complete");
         Ok(())
     }
 }
+
+// Trait implementations for DrmCanvas
+
+impl RenderCanvas for DrmCanvas {
+    type Frame<'a>
+        = DrmSurfaceTexture<'a>
+    where
+        Self: 'a;
+    type Error = DrmCanvasError;
+
+    fn get_current_texture(&self) -> Result<Self::Frame<'_>, Self::Error> {
+        Ok(DrmSurfaceTexture {
+            texture: &self.offscreen_buffers.color_texture,
+        })
+    }
+
+    fn present(&self, _frame: Self::Frame<'_>) -> Result<(), Self::Error> {
+        match &self.mode {
+            RenderMode::Offscreen => {
+                // No-op for offscreen rendering
+                Ok(())
+            }
+            #[cfg(feature = "drm")]
+            RenderMode::Display(display) => {
+                log::debug!("Present: starting frame presentation");
+
+                let width = self.surface_config.width;
+                let height = self.surface_config.height;
+
+                // Step 1: Get a buffer from the pool (blocks if none available)
+                let mut pixel_buffer = display.buffer_pool.try_get_buffer().unwrap_or_else(|| {
+                    log::warn!("No buffer available, allocating new buffer");
+                    vec![0u8; (width * height * 4) as usize]
+                });
+
+                // Step 2: Read GPU texture into the CPU buffer
+                Self::read_texture_to_buffer(
+                    &self.offscreen_buffers.color_texture,
+                    &mut pixel_buffer,
+                    width,
+                    height,
+                )?;
+                log::debug!("Present: read GPU texture to CPU buffer");
+
+                // Step 3: Send pixel data to display thread (non-blocking!)
+                let command = DisplayCommand {
+                    pixel_data: pixel_buffer,
+                    width,
+                    height,
+                };
+
+                if let Err(e) = display.display_thread.send_frame(command) {
+                    log::error!("Failed to send frame to display thread: {}", e);
+                    return Err(DrmCanvasError::PageFlipError(format!(
+                        "Failed to send frame to display thread: {}",
+                        e
+                    )));
+                }
+
+                log::trace!("Frame queued for async display - main thread continues");
+                log::debug!("Present: complete");
+                Ok(())
+            }
+        }
+    }
+
+    fn depth_view(&self) -> &wgpu::TextureView {
+        &self.offscreen_buffers.depth_view
+    }
+
+    fn msaa_view(&self) -> Option<&wgpu::TextureView> {
+        None
+    }
+
+    fn sample_count(&self) -> u32 {
+        1
+    }
+
+    fn surface_format(&self) -> wgpu::TextureFormat {
+        self.surface_config.format
+    }
+
+    fn size(&self) -> (u32, u32) {
+        (self.surface_config.width, self.surface_config.height)
+    }
+}
+
+impl ScreenshotCanvas for DrmCanvas {
+    type Frame<'a>
+        = DrmSurfaceTexture<'a>
+    where
+        Self: 'a;
+
+    fn copy_frame_to_readback(&self, frame: &Self::Frame<'_>) {
+        let ctxt = Context::get();
+        let mut encoder = ctxt.create_command_encoder(Some("readback_copy_encoder"));
+
+        encoder.copy_texture_to_texture(
+            wgpu::TexelCopyTextureInfo {
+                texture: &frame.texture,
+                mip_level: 0,
+                origin: wgpu::Origin3d::ZERO,
+                aspect: wgpu::TextureAspect::All,
+            },
+            wgpu::TexelCopyTextureInfo {
+                texture: &self.readback_texture,
+                mip_level: 0,
+                origin: wgpu::Origin3d::ZERO,
+                aspect: wgpu::TextureAspect::All,
+            },
+            wgpu::Extent3d {
+                width: self.surface_config.width,
+                height: self.surface_config.height,
+                depth_or_array_layers: 1,
+            },
+        );
+
+        ctxt.submit(std::iter::once(encoder.finish()));
+    }
+
+    fn read_pixels(&self, out: &mut Vec<u8>, x: usize, y: usize, width: usize, height: usize) {
+        pixel_reading::read_texture_to_rgb(
+            &self.offscreen_buffers.color_texture,
+            out,
+            x,
+            y,
+            width,
+            height,
+            self.surface_config.format,
+            "drm_screenshot",
+        )
+    }
+}
+
 impl<'a> Drop for DrmSurfaceTexture<'a> {
     fn drop(&mut self) {
         // No-op: DRM doesn't need to present on drop like regular SurfaceTexture

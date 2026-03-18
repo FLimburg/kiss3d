@@ -219,6 +219,11 @@ impl Window {
         self.ambient_intensity
     }
 
+    /// Returns the scale factor (always 1.0 for headless DRM rendering).
+    pub fn scale_factor(&self) -> f64 {
+        self.canvas.scale_factor()
+    }
+
     /// Enable event input from evdev devices
     #[cfg(target_os = "linux")]
     pub fn enable_evdev_input(&mut self, devices: Vec<String>) -> Result<(), std::io::Error> {

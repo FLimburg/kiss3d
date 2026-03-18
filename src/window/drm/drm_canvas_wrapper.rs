@@ -2,6 +2,7 @@
 #![allow(dead_code)]
 
 use crate::event::{Action, Key, MouseButton};
+use crate::window::canvas_traits::CameraCanvas;
 use crate::window::drm::DrmCanvas;
 
 /// A wrapper around DrmCanvas that provides the same interface as Canvas
@@ -73,4 +74,20 @@ impl<'a> DrmCanvasWrapper<'a> {
 
     /// Show the window (no-op in headless mode).
     pub fn show(&mut self) {}
+}
+
+impl<'a> CameraCanvas for DrmCanvasWrapper<'a> {
+    fn scale_factor(&self) -> f64 {
+        self.canvas.scale_factor()
+    }
+
+    fn get_mouse_button(&self, button: MouseButton) -> Action {
+        // Always Released in headless mode
+        Action::Release
+    }
+
+    fn get_key(&self, _key: Key) -> Action {
+        // Always Released in headless mode
+        Action::Release
+    }
 }

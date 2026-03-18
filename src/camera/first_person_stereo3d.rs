@@ -4,7 +4,7 @@ use glamx::{Mat4, Pose3, Vec2, Vec3};
 
 use crate::camera::Camera3d;
 use crate::event::{Action, Key, MouseButton, WindowEvent};
-use crate::window::Canvas;
+use crate::window::canvas_traits::CameraCanvas;
 
 /// First-person camera mode.
 ///
@@ -231,7 +231,7 @@ impl Camera3d for FirstPersonCamera3dStereo {
         Pose3::look_at_rh(self.eye, self.at(), Vec3::Y)
     }
 
-    fn handle_event(&mut self, canvas: &Canvas, event: &WindowEvent) {
+    fn handle_event(&mut self, canvas: &dyn CameraCanvas, event: &WindowEvent) {
         match *event {
             WindowEvent::CursorPos(x, y, _) => {
                 let curr_pos = Vec2::new(x as f32, y as f32);
@@ -269,7 +269,7 @@ impl Camera3d for FirstPersonCamera3dStereo {
         self.inverse_proj_view
     }
 
-    fn update(&mut self, canvas: &Canvas) {
+    fn update(&mut self, canvas: &dyn CameraCanvas) {
         let t = self.view_transform();
         let front = t.rotation * Vec3::Z;
         let right = t.rotation * Vec3::X;
@@ -312,11 +312,11 @@ impl Camera3d for FirstPersonCamera3dStereo {
     // The stereo camera's start_pass and render_complete functionality would need
     // to be handled differently in wgpu (e.g., through separate render passes
     // or by storing viewport info for materials to use).
-    fn start_pass(&self, _pass: usize, _canvas: &Canvas) {
+    fn start_pass(&self, _pass: usize, _canvas: &dyn CameraCanvas) {
         // TODO: Viewport handling needs to be done at render pass creation in wgpu
     }
 
-    fn render_complete(&self, _canvas: &Canvas) {
+    fn render_complete(&self, _canvas: &dyn CameraCanvas) {
         // TODO: Viewport reset handled differently in wgpu
     }
 }

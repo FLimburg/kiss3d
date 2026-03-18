@@ -7,6 +7,8 @@ use std::sync::Arc;
 use crate::context::Context;
 use crate::event::{Action, Key, Modifiers, MouseButton, TouchAction, WindowEvent};
 use crate::window::canvas::{CanvasSetup, NumSamples};
+use crate::window::canvas_traits::{RenderCanvas, ScreenshotCanvas, WindowCanvas};
+use crate::window::canvas_utils::{pixel_reading, texture_utils};
 use image::{GenericImage, Pixel};
 #[cfg(not(target_arch = "wasm32"))]
 use winit::application::ApplicationHandler;
@@ -625,26 +627,7 @@ impl WgpuCanvas {
         height: u32,
         sample_count: u32,
     ) -> (wgpu::Texture, wgpu::TextureView) {
-        let sample_count = sample_count.max(1);
-        // Ensure minimum dimensions of 1x1 to avoid wgpu validation errors
-        let width = width.max(1);
-        let height = height.max(1);
-        let texture = device.create_texture(&wgpu::TextureDescriptor {
-            label: Some("depth_texture"),
-            size: wgpu::Extent3d {
-                width,
-                height,
-                depth_or_array_layers: 1,
-            },
-            mip_level_count: 1,
-            sample_count,
-            dimension: wgpu::TextureDimension::D2,
-            format: Context::depth_format(),
-            usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
-            view_formats: &[],
-        });
-        let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
-        (texture, view)
+        texture_utils::create_depth_texture(device, width, height, sample_count)
     }
 
     fn create_msaa_texture(
@@ -654,25 +637,7 @@ impl WgpuCanvas {
         format: wgpu::TextureFormat,
         sample_count: u32,
     ) -> (wgpu::Texture, wgpu::TextureView) {
-        // Ensure minimum dimensions of 1x1 to avoid wgpu validation errors
-        let width = width.max(1);
-        let height = height.max(1);
-        let texture = device.create_texture(&wgpu::TextureDescriptor {
-            label: Some("msaa_texture"),
-            size: wgpu::Extent3d {
-                width,
-                height,
-                depth_or_array_layers: 1,
-            },
-            mip_level_count: 1,
-            sample_count,
-            dimension: wgpu::TextureDimension::D2,
-            format,
-            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-            view_formats: &[],
-        });
-        let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
-        (texture, view)
+        texture_utils::create_msaa_texture(device, width, height, format, sample_count)
     }
 
     fn create_readback_texture(
@@ -681,23 +646,7 @@ impl WgpuCanvas {
         height: u32,
         format: wgpu::TextureFormat,
     ) -> wgpu::Texture {
-        // Ensure minimum dimensions of 1x1 to avoid wgpu validation errors
-        let width = width.max(1);
-        let height = height.max(1);
-        device.create_texture(&wgpu::TextureDescriptor {
-            label: Some("readback_texture"),
-            size: wgpu::Extent3d {
-                width,
-                height,
-                depth_or_array_layers: 1,
-            },
-            mip_level_count: 1,
-            sample_count: 1,
-            dimension: wgpu::TextureDimension::D2,
-            format,
-            usage: wgpu::TextureUsages::COPY_DST | wgpu::TextureUsages::COPY_SRC,
-            view_formats: &[],
-        })
+        texture_utils::create_readback_texture(device, width, height, format, "readback_texture")
     }
 
     /// Polls events from the window system.
@@ -1014,101 +963,16 @@ impl WgpuCanvas {
     /// Reads pixels from the readback texture into the provided buffer.
     /// Returns RGB data (3 bytes per pixel).
     pub fn read_pixels(&self, out: &mut Vec<u8>, x: usize, y: usize, width: usize, height: usize) {
-        let ctxt = Context::get();
-
-        // Calculate buffer size with alignment
-        // wgpu requires rows to be aligned to 256 bytes
-        let bytes_per_pixel = 4; // RGBA or BGRA
-        let unpadded_bytes_per_row = width * bytes_per_pixel;
-        let align = wgpu::COPY_BYTES_PER_ROW_ALIGNMENT as usize;
-        let padded_bytes_per_row = unpadded_bytes_per_row.div_ceil(align) * align;
-        let buffer_size = padded_bytes_per_row * height;
-
-        // Create staging buffer
-        let staging_buffer = ctxt.create_buffer(&wgpu::BufferDescriptor {
-            label: Some("screenshot_staging_buffer"),
-            size: buffer_size as u64,
-            usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
-            mapped_at_creation: false,
-        });
-
-        // Copy from readback texture to staging buffer
-        let mut encoder = ctxt.create_command_encoder(Some("screenshot_copy_encoder"));
-
-        encoder.copy_texture_to_buffer(
-            wgpu::TexelCopyTextureInfo {
-                texture: &self.readback_texture,
-                mip_level: 0,
-                origin: wgpu::Origin3d {
-                    x: x as u32,
-                    y: y as u32,
-                    z: 0,
-                },
-                aspect: wgpu::TextureAspect::All,
-            },
-            wgpu::TexelCopyBufferInfo {
-                buffer: &staging_buffer,
-                layout: wgpu::TexelCopyBufferLayout {
-                    offset: 0,
-                    bytes_per_row: Some(padded_bytes_per_row as u32),
-                    rows_per_image: Some(height as u32),
-                },
-            },
-            wgpu::Extent3d {
-                width: width as u32,
-                height: height as u32,
-                depth_or_array_layers: 1,
-            },
-        );
-
-        ctxt.submit(std::iter::once(encoder.finish()));
-
-        // Map the buffer and read the data
-        let buffer_slice = staging_buffer.slice(..);
-        let (tx, rx) = std::sync::mpsc::channel();
-        buffer_slice.map_async(wgpu::MapMode::Read, move |result| {
-            tx.send(result).unwrap();
-        });
-
-        // Wait for the GPU to finish
-        let _ = ctxt.device.poll(wgpu::PollType::wait_indefinitely());
-        rx.recv().unwrap().unwrap();
-
-        // Read the data
-        let data = buffer_slice.get_mapped_range();
-
-        // Convert from BGRA/RGBA to RGB and handle row padding
-        let rgb_size = width * height * 3;
-        out.clear();
-        out.reserve(rgb_size);
-
-        let is_bgra = matches!(
+        pixel_reading::read_texture_to_rgb(
+            &self.readback_texture,
+            out,
+            x,
+            y,
+            width,
+            height,
             self.surface_config.format,
-            wgpu::TextureFormat::Bgra8Unorm | wgpu::TextureFormat::Bgra8UnormSrgb
-        );
-
-        // wgpu has origin at top-left, but we want bottom-left origin for OpenGL compatibility
-        // So we read rows in reverse order
-        for row in (0..height).rev() {
-            let row_start = row * padded_bytes_per_row;
-            for col in 0..width {
-                let pixel_start = row_start + col * bytes_per_pixel;
-                if is_bgra {
-                    // BGRA -> RGB
-                    out.push(data[pixel_start + 2]); // R
-                    out.push(data[pixel_start + 1]); // G
-                    out.push(data[pixel_start]); // B
-                } else {
-                    // RGBA -> RGB
-                    out.push(data[pixel_start]); // R
-                    out.push(data[pixel_start + 1]); // G
-                    out.push(data[pixel_start + 2]); // B
-                }
-            }
-        }
-
-        drop(data);
-        staging_buffer.unmap();
+            "screenshot",
+        )
     }
 
     /// Gets the depth texture view for rendering.
@@ -1206,6 +1070,156 @@ impl WgpuCanvas {
     /// The state of a key.
     pub fn get_key(&self, key: Key) -> Action {
         self.key_states[key as usize]
+    }
+}
+
+// Trait implementations for WgpuCanvas
+
+impl RenderCanvas for WgpuCanvas {
+    type Frame<'a>
+        = wgpu::SurfaceTexture
+    where
+        Self: 'a;
+    type Error = wgpu::SurfaceError;
+
+    fn get_current_texture(&self) -> Result<Self::Frame<'_>, Self::Error> {
+        self.surface.get_current_texture()
+    }
+
+    fn present(&self, frame: Self::Frame<'_>) -> Result<(), Self::Error> {
+        frame.present();
+        Ok(())
+    }
+
+    fn depth_view(&self) -> &wgpu::TextureView {
+        &self.depth_view
+    }
+
+    fn msaa_view(&self) -> Option<&wgpu::TextureView> {
+        self.msaa_view.as_ref()
+    }
+
+    fn sample_count(&self) -> u32 {
+        self.sample_count.max(1)
+    }
+
+    fn surface_format(&self) -> wgpu::TextureFormat {
+        self.surface_config.format
+    }
+
+    fn size(&self) -> (u32, u32) {
+        (self.surface_config.width, self.surface_config.height)
+    }
+}
+
+impl ScreenshotCanvas for WgpuCanvas {
+    type Frame<'a>
+        = wgpu::SurfaceTexture
+    where
+        Self: 'a;
+
+    fn copy_frame_to_readback(&self, frame: &Self::Frame<'_>) {
+        let ctxt = Context::get();
+        let mut encoder = ctxt.create_command_encoder(Some("readback_copy_encoder"));
+
+        encoder.copy_texture_to_texture(
+            wgpu::TexelCopyTextureInfo {
+                texture: &frame.texture,
+                mip_level: 0,
+                origin: wgpu::Origin3d::ZERO,
+                aspect: wgpu::TextureAspect::All,
+            },
+            wgpu::TexelCopyTextureInfo {
+                texture: &self.readback_texture,
+                mip_level: 0,
+                origin: wgpu::Origin3d::ZERO,
+                aspect: wgpu::TextureAspect::All,
+            },
+            wgpu::Extent3d {
+                width: self.surface_config.width,
+                height: self.surface_config.height,
+                depth_or_array_layers: 1,
+            },
+        );
+
+        ctxt.submit(std::iter::once(encoder.finish()));
+    }
+
+    fn read_pixels(&self, out: &mut Vec<u8>, x: usize, y: usize, width: usize, height: usize) {
+        pixel_reading::read_texture_to_rgb(
+            &self.readback_texture,
+            out,
+            x,
+            y,
+            width,
+            height,
+            self.surface_config.format,
+            "screenshot",
+        )
+    }
+}
+
+impl WindowCanvas for WgpuCanvas {
+    fn poll_events(&mut self) {
+        self.poll_events()
+    }
+
+    fn cursor_pos(&self) -> Option<(f64, f64)> {
+        self.cursor_pos
+    }
+
+    fn scale_factor(&self) -> f64 {
+        self.scale_factor()
+    }
+
+    fn set_title(&mut self, title: &str) {
+        self.window.set_title(title)
+    }
+
+    fn set_icon(&mut self, icon: impl GenericImage<Pixel = impl Pixel<Subpixel = u8>>) {
+        let (width, height) = icon.dimensions();
+        let mut rgba = Vec::with_capacity((width * height) as usize * 4);
+        for (_, _, pixel) in icon.pixels() {
+            rgba.extend_from_slice(&pixel.to_rgba().0);
+        }
+        let icon = Icon::from_rgba(rgba, width, height).unwrap();
+        self.window.set_window_icon(Some(icon))
+    }
+
+    fn set_cursor_grab(&self, grab: bool) {
+        use winit::window::CursorGrabMode;
+        let mode = if grab {
+            CursorGrabMode::Confined
+        } else {
+            CursorGrabMode::None
+        };
+        let _ = self.window.set_cursor_grab(mode);
+    }
+
+    fn set_cursor_position(&self, x: f64, y: f64) {
+        let _ = self
+            .window
+            .set_cursor_position(winit::dpi::PhysicalPosition::new(x, y));
+    }
+
+    fn hide_cursor(&self, hide: bool) {
+        self.window.set_cursor_visible(!hide)
+    }
+
+    fn hide(&mut self) {
+        self.window.set_visible(false)
+    }
+
+    fn show(&mut self) {
+        self.window.set_visible(true)
+    }
+
+    fn get_mouse_button(&self, button: MouseButton) -> Action {
+        self.get_mouse_button(button)
+    }
+
+    fn get_key(&self, key: Key) -> Action {
+        self.get_key(key)
     }
 }
 

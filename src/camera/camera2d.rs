@@ -1,5 +1,5 @@
 use crate::event::WindowEvent;
-use crate::window::Canvas;
+use crate::window::canvas_traits::CameraCanvas;
 use glamx::{Mat3, Vec2};
 
 /// Trait that all 2D camera implementations must implement.
@@ -19,7 +19,7 @@ pub trait Camera2d {
     /// # Arguments
     /// * `canvas` - Reference to the rendering canvas
     /// * `event` - The window event to handle
-    fn handle_event(&mut self, canvas: &Canvas, event: &WindowEvent);
+    fn handle_event(&mut self, canvas: &dyn CameraCanvas, event: &WindowEvent);
 
     /// Updates the camera state for the current frame.
     ///
@@ -27,7 +27,7 @@ pub trait Camera2d {
     ///
     /// # Arguments
     /// * `canvas` - Reference to the rendering canvas
-    fn update(&mut self, canvas: &Canvas);
+    fn update(&mut self, canvas: &dyn CameraCanvas);
 
     /// Returns the view and projection matrices for 2D rendering.
     ///

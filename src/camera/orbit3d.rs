@@ -1,7 +1,7 @@
 use crate::camera::first_person3d::CoordSystemRh;
 use crate::camera::Camera3d;
 use crate::event::{Action, Key, Modifiers, MouseButton, WindowEvent};
-use crate::window::Canvas;
+use crate::window::canvas_traits::CameraCanvas;
 use glamx::{Mat4, Pose3, Vec2, Vec3};
 use std::f32;
 
@@ -496,7 +496,7 @@ impl Camera3d for OrbitCamera3d {
         self.coord_system.rotation_to_y_up.conjugate() * Vec3::new(px, py, pz)
     }
 
-    fn handle_event(&mut self, canvas: &Canvas, event: &WindowEvent) {
+    fn handle_event(&mut self, canvas: &dyn CameraCanvas, event: &WindowEvent) {
         match *event {
             WindowEvent::CursorPos(x, y, modifiers) => {
                 let curr_pos = Vec2::new(x as f32, y as f32);
@@ -551,5 +551,5 @@ impl Camera3d for OrbitCamera3d {
         self.inverse_proj_view
     }
 
-    fn update(&mut self, _: &Canvas) {}
+    fn update(&mut self, _: &dyn CameraCanvas) {}
 }

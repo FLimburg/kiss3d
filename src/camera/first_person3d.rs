@@ -1,6 +1,6 @@
 use crate::camera::Camera3d;
 use crate::event::{Action, Key, MouseButton, WindowEvent};
-use crate::window::Canvas;
+use crate::window::canvas_traits::CameraCanvas;
 use glamx::{Mat4, Pose3, Rot3, Vec2, Vec3};
 use std::f32;
 
@@ -418,7 +418,7 @@ impl Camera3d for FirstPersonCamera3d {
         Pose3::look_at_rh(self.eye, self.at(), self.coord_system.up_axis)
     }
 
-    fn handle_event(&mut self, canvas: &Canvas, event: &WindowEvent) {
+    fn handle_event(&mut self, canvas: &dyn CameraCanvas, event: &WindowEvent) {
         match *event {
             WindowEvent::CursorPos(x, y, _) => {
                 let curr_pos = Vec2::new(x as f32, y as f32);
@@ -465,7 +465,7 @@ impl Camera3d for FirstPersonCamera3d {
         (self.view_transform(), self.proj)
     }
 
-    fn update(&mut self, canvas: &Canvas) {
+    fn update(&mut self, canvas: &dyn CameraCanvas) {
         let up = check_optional_key_state(canvas, self.up_key, Action::Press);
         let down = check_optional_key_state(canvas, self.down_key, Action::Press);
         let right = check_optional_key_state(canvas, self.right_key, Action::Press);
@@ -477,7 +477,11 @@ impl Camera3d for FirstPersonCamera3d {
     }
 }
 
-fn check_optional_key_state(canvas: &Canvas, key: Option<Key>, key_state: Action) -> bool {
+fn check_optional_key_state(
+    canvas: &dyn CameraCanvas,
+    key: Option<Key>,
+    key_state: Action,
+) -> bool {
     if let Some(actual_key) = key {
         canvas.get_key(actual_key) == key_state
     } else {
