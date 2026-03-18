@@ -268,7 +268,7 @@ impl Window {
         let canvas_ref =
             // SAFETY: Cameras only read from canvas, lifetime is scoped to this function
             unsafe {
-                std::mem::transmute::<&crate::window::drm::DrmCanvasWrapper, &Canvas>(&wrapper)
+                std::mem::transmute(&wrapper)
         };
         #[cfg(not(feature = "drm"))]
         let canvas_ref = &self.canvas;

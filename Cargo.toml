@@ -36,7 +36,6 @@ serde = ["dep:serde", "glamx/serde", "bitflags/serde", "rgb/serde"]
 drm = ["dep:drm"]
 
 [dependencies]
-tokio = { version = "1.49.0", features = ["full"] }
 bitflags = "2"
 bytemuck = { version = "1", features = ["derive"] }
 egui = { version = "0.33", optional = true, default-features = true }
