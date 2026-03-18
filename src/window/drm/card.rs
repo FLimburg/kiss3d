@@ -110,7 +110,7 @@ mod tests {
         // Test that open_global correctly forwards to open
         // Again, ignored to avoid actual device operations
         let device_path = "/dev/dri/card0";
-        let _ = Card::open_global(device_path);
+        let _ = Card::open(device_path);
     }
 
     #[test]

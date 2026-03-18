@@ -34,10 +34,10 @@ async fn main() {
 
     // Create DRM window with display output (uses async display thread automatically)
     println!("🎬 Creating DRM window ...");
-    let mut window = DRMWindow::try_new().await;
+    let mut window = Window::new("").await;
     println!("✅ DRM window created successfully!");
-    let (width, height) = window.size();
-    println!("  Resolution: {}x{}", width, height);
+    let size = window.size();
+    println!("  Resolution: {}x{}", size[0], size[1]);
 
     println!();
     println!("🎨 Setting up benchmark scene...");

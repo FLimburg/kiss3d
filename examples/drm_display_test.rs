@@ -58,7 +58,7 @@ async fn main() {
 
     // Create DRM window with display output
     println!("🎬 Creating DRM window with display output...");
-    let mut window = match DRMWindow::new(&device_path).await {
+    let mut window = match Window::try_new(&device_path).await {
         Ok(w) => {
             println!("✅ DRM window created successfully!");
             w
