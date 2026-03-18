@@ -3,7 +3,11 @@ use kiss3d::prelude::*;
 
 #[kiss3d::main]
 async fn main() {
+    #[cfg(not(feature = "drm"))]
     let mut window = Window::new_with_size("Kiss3d: stereo", 1280, 800).await;
+    #[cfg(feature = "drm")]
+    let mut window = Window::new("Kiss3d: stereo").await;
+
     let mut scene = SceneNode3d::empty();
     scene
         .add_light(Light::point(100.0))

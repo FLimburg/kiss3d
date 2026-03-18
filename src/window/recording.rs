@@ -4,6 +4,9 @@ use std::path::Path;
 
 use image::{ImageBuffer, Rgb};
 
+#[cfg(feature = "drm")]
+use super::drm::Window;
+#[cfg(not(feature = "drm"))]
 use super::Window;
 
 /// Configuration options for video recording.

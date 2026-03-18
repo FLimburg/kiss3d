@@ -376,7 +376,10 @@ mod tests {
         assert!(buf4.is_none());
 
         // Recycle one buffer
-        pool.recycle_buffer(buf1.unwrap());
+        let recycler = pool.recycler();
+        recycler
+            .send(buf1.unwrap())
+            .expect("Failed to recycle buffer");
 
         // Should be able to get it back
         let buf5 = pool.try_get_buffer();
@@ -386,8 +389,11 @@ mod tests {
     #[test]
     fn test_buffer_pool_recycling() {
         let pool = BufferPool::new(2, 512);
+        let recycler = pool.recycler();
 
-        let mut buffer = pool.get_buffer();
+        let mut buffer = pool
+            .try_get_buffer()
+            .expect("Failed to get buffer from pool");
         assert_eq!(buffer.len(), 512);
 
         // Modify buffer
@@ -395,12 +401,25 @@ mod tests {
         buffer[100] = 99;
 
         // Recycle it
-        pool.recycle_buffer(buffer);
+        recycler.send(buffer).expect("Failed to recycle buffer");
 
         // Get it back
-        let recycled = pool.get_buffer();
-        assert_eq!(recycled.len(), 512);
+        let recycled = pool
+            .try_get_buffer()
+            .expect("Failed to get recycled buffer");
+        assert_eq!(recycled[0], 42);
+        assert_eq!(recycled[100], 99);
         // Note: We get a buffer back, but it may be newly allocated or recycled
         // The important thing is that the pool works and provides buffers
+    }
+
+    #[test]
+    fn test_buffer_pool_size() {
+        let buffer_size = 1920 * 1080 * 4; // Full HD XRGB
+        let pool = BufferPool::new(2, buffer_size);
+
+        let buf1 = pool.try_get_buffer();
+        assert!(buf1.is_some());
+        assert_eq!(buf1.unwrap().len(), buffer_size);
     }
 }

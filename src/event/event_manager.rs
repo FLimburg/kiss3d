@@ -26,7 +26,7 @@ impl<'a> Drop for Event<'a> {
 
 impl<'a> Event<'a> {
     #[inline]
-    fn new(value: WindowEvent, inhibitor: &RefCell<Vec<WindowEvent>>) -> Event<'_> {
+    pub fn new(value: WindowEvent, inhibitor: &RefCell<Vec<WindowEvent>>) -> Event<'_> {
         Event {
             value,
             inhibited: false,

@@ -69,6 +69,8 @@ pub struct DrmCanvas {
     surface_config: DrmSurfaceConfig,
     /// Rendering mode (offscreen or display)
     mode: RenderMode,
+    /// Texture for reading back pixels (for screenshots)
+    readback_texture: wgpu::Texture,
 }
 
 /// Configuration for the DRM surface (mimics wgpu::SurfaceConfiguration).
@@ -142,10 +144,14 @@ impl DrmCanvas {
         // Create offscreen render target (includes depth texture)
         let offscreen_buffers = OffscreenBuffers::new(width, height, format, true);
 
+        let ctxt = Context::get();
+        let readback_texture = Self::create_readback_texture(&ctxt.device, width, height, format);
+
         Ok(Self {
             offscreen_buffers,
             surface_config,
             mode: RenderMode::Offscreen,
+            readback_texture,
         })
     }
 
@@ -202,6 +208,15 @@ impl DrmCanvas {
             true,
         );
 
+        // Create readback texture for screenshots
+        let ctxt = Context::get();
+        let readback_texture = Self::create_readback_texture(
+            &ctxt.device,
+            display_config.width,
+            display_config.height,
+            format_info.wgpu_format,
+        );
+
         // Step 6: Create buffer pool for pixel data (triple buffering)
         log::info!("Creating buffer pool for triple buffering...");
         let buffer_size = (display_config.width * display_config.height * 4) as usize;
@@ -236,6 +251,7 @@ impl DrmCanvas {
                 format: format_info.wgpu_format,
             },
             mode: RenderMode::Display(Box::new(display_state)),
+            readback_texture,
         })
     }
 
@@ -317,8 +333,11 @@ impl DrmCanvas {
     ///
     /// For offscreen rendering, this is a no-op. For display mode,
     /// this triggers a page flip to show the rendered frame.
-    pub fn present(&mut self) -> Result<(), DrmCanvasError> {
-        match &mut self.mode {
+    ///
+    /// # Arguments
+    /// * `_frame` - The surface texture (unused in DRM, kept for API compatibility)
+    pub fn present(&self, _frame: DrmSurfaceTexture) -> Result<(), DrmCanvasError> {
+        match &self.mode {
             RenderMode::Offscreen => {
                 // No-op for offscreen rendering
                 Ok(())
@@ -477,6 +496,29 @@ impl DrmCanvas {
         drop(data);
         staging_buffer.unmap();
     }
+
+    /// Creates a readback texture for screenshots
+    fn create_readback_texture(
+        device: &wgpu::Device,
+        width: u32,
+        height: u32,
+        format: wgpu::TextureFormat,
+    ) -> wgpu::Texture {
+        device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("drm_readback_texture"),
+            size: wgpu::Extent3d {
+                width,
+                height,
+                depth_or_array_layers: 1,
+            },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format,
+            usage: wgpu::TextureUsages::COPY_DST | wgpu::TextureUsages::COPY_SRC,
+            view_formats: &[],
+        })
+    }
 }
 
 /// Wrapper for the surface texture to match wgpu::SurfaceTexture API.
@@ -593,6 +635,33 @@ impl DrmCanvas {
         }
     }
 
+    pub fn copy_frame_to_readback(&self, frame: &DrmSurfaceTexture) {
+        let ctxt = Context::get();
+        let mut encoder = ctxt.create_command_encoder(Some("readback_copy_encoder"));
+
+        encoder.copy_texture_to_texture(
+            wgpu::TexelCopyTextureInfo {
+                texture: &frame.texture,
+                mip_level: 0,
+                origin: wgpu::Origin3d::ZERO,
+                aspect: wgpu::TextureAspect::All,
+            },
+            wgpu::TexelCopyTextureInfo {
+                texture: &self.readback_texture,
+                mip_level: 0,
+                origin: wgpu::Origin3d::ZERO,
+                aspect: wgpu::TextureAspect::All,
+            },
+            wgpu::Extent3d {
+                width: self.surface_config.width,
+                height: self.surface_config.height,
+                depth_or_array_layers: 1,
+            },
+        );
+
+        ctxt.submit(std::iter::once(encoder.finish()));
+    }
+
     /// Read GPU texture data into a CPU buffer.
     /// This transfers rendered frame data from GPU to CPU memory.
     fn read_texture_to_buffer(
@@ -686,5 +755,10 @@ impl DrmCanvas {
 
         log::debug!("GPU texture read complete");
         Ok(())
+    }
+}
+impl<'a> Drop for DrmSurfaceTexture<'a> {
+    fn drop(&mut self) {
+        // No-op: DRM doesn't need to present on drop like regular SurfaceTexture
     }
 }
