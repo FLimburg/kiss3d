@@ -2,18 +2,14 @@
 
 use crate::camera::Camera2d;
 use crate::camera::Camera3d;
-use crate::event::{Action, EventManager, Key, MouseButton, WindowEvent};
+use crate::event::{Action, Key, WindowEvent};
+#[cfg(not(feature = "drm"))]
+use crate::event::EventManager;
 
 use super::Window;
 
 impl Window {
     /// Returns an event manager for accessing window events.
-    ///
-    /// The event manager provides an iterator over events that occurred since the last frame,
-    /// such as keyboard input, mouse movement, and window resizing.
-    ///
-    /// # Returns
-    /// An `EventManager` that can be iterated to process events
     ///
     /// # Example
     /// ```no_run
@@ -35,64 +31,50 @@ impl Window {
     /// # }
     /// # }
     /// ```
+    #[cfg(not(feature = "drm"))]
     pub fn events(&self) -> EventManager {
         EventManager::new(self.events.clone(), self.unhandled_events.clone())
     }
 
-    /// Gets the current state of a keyboard key.
+    /// Poll and dispatch all pending events to cameras.
     ///
-    /// # Arguments
-    /// * `key` - The key to check
-    ///
-    /// # Returns
-    /// The current `Action` state (e.g., `Action::Press`, `Action::Release`)
-    pub fn get_key(&self, key: Key) -> Action {
-        self.canvas.get_key(key)
-    }
-
-    /// Gets the current state of a mouse button.
-    ///
-    /// # Arguments
-    /// * `button` - The mouse button to check
-    ///
-    /// # Returns
-    /// The current `Action` state (e.g., `Action::Press`, `Action::Release`)
-    pub fn get_mouse_button(&self, button: MouseButton) -> Action {
-        self.canvas.get_mouse_button(button)
-    }
-
-    /// Gets the last known position of the mouse cursor.
-    ///
-    /// The position is automatically updated when the mouse moves over the window.
-    /// Coordinates are in pixels, with (0, 0) at the top-left corner.
-    ///
-    /// # Returns
-    /// `Some((x, y))` with the cursor position, or `None` if the cursor position is unknown
-    pub fn cursor_pos(&self) -> Option<(f64, f64)> {
-        self.canvas.cursor_pos()
-    }
-
+    /// Called once per frame by `render` before drawing.
     #[inline]
     pub(crate) fn handle_events(
         &mut self,
         camera: &mut dyn Camera3d,
         camera_2d: &mut dyn Camera2d,
     ) {
-        let unhandled_events = self.unhandled_events.clone(); // TODO: could we avoid the clone?
-        let events = self.events.clone(); // TODO: could we avoid the clone?
+        #[cfg(not(feature = "drm"))]
+        {
+            let unhandled_events = self.unhandled_events.clone(); // TODO: could we avoid the clone?
+            let events = self.events.clone(); // TODO: could we avoid the clone?
 
-        for event in unhandled_events.borrow().iter() {
-            self.handle_event(camera, camera_2d, event)
+            for event in unhandled_events.borrow().iter() {
+                self.handle_event(camera, camera_2d, event);
+            }
+
+            for event in events.try_iter() {
+                self.handle_event(camera, camera_2d, &event);
+            }
+
+            unhandled_events.borrow_mut().clear();
+            self.canvas.poll_events();
         }
 
-        for event in events.try_iter() {
-            self.handle_event(camera, camera_2d, &event)
+        #[cfg(feature = "drm")]
+        {
+            self.event_manager.borrow_mut().poll_events();
+            let events: Vec<_> = self.event_manager.borrow_mut().drain_events().collect();
+            for event in events {
+                self.handle_event(camera, camera_2d, &event);
+            }
         }
-
-        unhandled_events.borrow_mut().clear();
-        self.canvas.poll_events();
     }
 
+    /// Dispatch a single event to cameras and handle built-in actions (close, egui, etc.).
+    ///
+    /// Shared between windowed and DRM backends.
     pub(crate) fn handle_event(
         &mut self,
         camera: &mut dyn Camera3d,
@@ -107,7 +89,7 @@ impl Window {
         }
 
         // Feed events to egui and check if it wants to capture input
-        #[cfg(feature = "egui")]
+        #[cfg(all(feature = "egui", not(feature = "drm")))]
         {
             self.feed_egui_event(event);
 

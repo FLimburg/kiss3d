@@ -6,17 +6,12 @@ use crate::window::canvas::CanvasInputState;
 use std::error::Error;
 use std::fmt;
 
-#[cfg(feature = "drm")]
 use super::card::Card;
-#[cfg(feature = "drm")]
 use super::display_thread::{BufferPool, DisplayCommand, DisplayThread, DisplayThreadConfig};
-#[cfg(feature = "drm")]
 use drm::buffer::DrmFourcc;
-#[cfg(feature = "drm")]
 use drm::control::{connector, crtc, Device as ControlDevice, Mode, ResourceHandles};
 
 /// Error type for DRM canvas operations.
-#[cfg(feature = "drm")]
 #[derive(Debug)]
 pub enum DrmCanvasError {
     DeviceRequest(String),
@@ -55,7 +50,6 @@ enum RenderMode {
     /// Offscreen rendering only (screenshots/recording)
     Offscreen,
     /// Display output via DRM/KMS
-    #[cfg(feature = "drm")]
     Display(Box<DrmDisplayState>),
 }
 
@@ -82,7 +76,6 @@ struct DrmSurfaceConfig {
 }
 
 /// Display configuration discovered from hardware
-#[cfg(feature = "drm")]
 struct DisplayConfig {
     connector: connector::Handle,
     crtc: crtc::Handle,
@@ -92,14 +85,12 @@ struct DisplayConfig {
 }
 
 /// Format compatibility information
-#[cfg(feature = "drm")]
 struct FormatInfo {
     wgpu_format: wgpu::TextureFormat,
     drm_format: DrmFourcc,
 }
 
 /// DRM display state for actual screen output
-#[cfg(feature = "drm")]
 struct DrmDisplayState {
     /// Async display thread for non-blocking presentation
     display_thread: DisplayThread,
@@ -173,7 +164,6 @@ impl DrmCanvas {
     /// - No connected display is found
     /// - GBM initialization fails
     /// - wgpu initialization fails
-    #[cfg(feature = "drm")]
     pub async fn new_with_display(device_path: &str) -> Result<Self, DrmCanvasError> {
         log::info!("Creating DRM canvas with display output: {}", device_path);
 
@@ -342,7 +332,6 @@ impl DrmCanvas {
             RenderMode::Offscreen => {
                 // No-op for offscreen rendering
             }
-            #[cfg(feature = "drm")]
             RenderMode::Display(display) => {
                 log::debug!("Present: starting frame presentation");
 
@@ -406,6 +395,60 @@ impl DrmCanvas {
     /// Returns the sample count (always 1 for now).
     pub fn sample_count(&self) -> u32 {
         1
+    }
+
+    /// Returns the DPI scale factor (always 1.0 for DRM/headless).
+    pub fn scale_factor(&self) -> f64 {
+        1.0
+    }
+
+    /// Returns the cursor position (always None — no pointer device in headless mode).
+    pub fn cursor_pos(&self) -> Option<(f64, f64)> {
+        None
+    }
+
+    /// Returns the state of a keyboard key (always Release — no keyboard in headless mode).
+    pub fn get_key(&self, _key: crate::event::Key) -> crate::event::Action {
+        crate::event::Action::Release
+    }
+
+    /// Returns the state of a mouse button (always Release — no pointer device in headless mode).
+    pub fn get_mouse_button(&self, _button: crate::event::MouseButton) -> crate::event::Action {
+        crate::event::Action::Release
+    }
+
+    /// No-op poll — DRM canvas receives events through DrmEventManager, not here.
+    pub fn poll_events(&mut self) {}
+
+    /// Copies the rendered frame texture to the readback texture.
+    ///
+    /// For DRM canvas the "frame" is already the offscreen color texture, so this
+    /// is a texture-to-texture copy into the dedicated readback buffer.
+    pub fn copy_frame_to_readback(&self, _frame: &DrmSurfaceTexture<'_>) {
+        let ctxt = crate::context::Context::get();
+        let mut encoder = ctxt.create_command_encoder(Some("drm_readback_copy_encoder"));
+
+        encoder.copy_texture_to_texture(
+            wgpu::TexelCopyTextureInfo {
+                texture: &self.offscreen_buffers.color_texture,
+                mip_level: 0,
+                origin: wgpu::Origin3d::ZERO,
+                aspect: wgpu::TextureAspect::All,
+            },
+            wgpu::TexelCopyTextureInfo {
+                texture: &self.readback_texture,
+                mip_level: 0,
+                origin: wgpu::Origin3d::ZERO,
+                aspect: wgpu::TextureAspect::All,
+            },
+            wgpu::Extent3d {
+                width: self.surface_config.width,
+                height: self.surface_config.height,
+                depth_or_array_layers: 1,
+            },
+        );
+
+        ctxt.submit(std::iter::once(encoder.finish()));
     }
 
     /// Reads pixels from the offscreen framebuffer into a buffer.
@@ -535,15 +578,13 @@ pub struct DrmSurfaceTexture<'a> {
 
 impl Drop for DrmCanvas {
     fn drop(&mut self) {
-        // Decrement window count and reset context if this is the last window
-        if Context::decrement_window_count() {
-            log::info!("Last DRM canvas dropped, resetting wgpu context");
-            Context::reset();
-        }
+        // DRM/KMS resources (dumb buffers, framebuffers) are cleaned up by
+        // DisplayThread's own Drop impl. Context lifecycle (decrement_window_count /
+        // reset) is managed exclusively by Window::drop to avoid double-decrement.
+        log::debug!("DrmCanvas dropped");
     }
 }
 
-#[cfg(feature = "drm")]
 impl DrmCanvas {
     /// Query display resources and find a suitable display configuration.
     fn query_display_resources(card: &Card) -> Result<DisplayConfig, DrmCanvasError> {
@@ -640,33 +681,6 @@ impl DrmCanvas {
             wgpu_format: wgpu::TextureFormat::Bgra8Unorm,
             drm_format: DrmFourcc::Xrgb8888,
         }
-    }
-
-    pub fn copy_frame_to_readback(&self, frame: &DrmSurfaceTexture) {
-        let ctxt = Context::get();
-        let mut encoder = ctxt.create_command_encoder(Some("readback_copy_encoder"));
-
-        encoder.copy_texture_to_texture(
-            wgpu::TexelCopyTextureInfo {
-                texture: &frame.texture,
-                mip_level: 0,
-                origin: wgpu::Origin3d::ZERO,
-                aspect: wgpu::TextureAspect::All,
-            },
-            wgpu::TexelCopyTextureInfo {
-                texture: &self.readback_texture,
-                mip_level: 0,
-                origin: wgpu::Origin3d::ZERO,
-                aspect: wgpu::TextureAspect::All,
-            },
-            wgpu::Extent3d {
-                width: self.surface_config.width,
-                height: self.surface_config.height,
-                depth_or_array_layers: 1,
-            },
-        );
-
-        ctxt.submit(std::iter::once(encoder.finish()));
     }
 
     /// Read GPU texture data into a CPU buffer.
