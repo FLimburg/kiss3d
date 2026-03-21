@@ -177,29 +177,3 @@ impl<'a> Drop for DrmEventIterator<'a> {
         // The inhibitor list will be used by handle_events
     }
 }
-
-// Add Window implementation
-use super::Window;
-use crate::event::{Action, Key, MouseButton};
-
-impl Window {
-    /// Returns an event manager for accessing window events.
-    pub fn events(&self) -> DrmEventManagerWrapper {
-        DrmEventManagerWrapper::new(self.event_manager.clone())
-    }
-
-    /// Gets the current state of a keyboard key (always Release in headless mode).
-    pub fn get_key(&self, _key: Key) -> Action {
-        Action::Release
-    }
-
-    /// Gets the current state of a mouse button (always Release in headless mode).
-    pub fn get_mouse_button(&self, _button: MouseButton) -> Action {
-        Action::Release
-    }
-
-    /// Gets the cursor position (always None in headless mode).
-    pub fn cursor_pos(&self) -> Option<(f64, f64)> {
-        None
-    }
-}

@@ -2,34 +2,33 @@
 
 use super::drm_canvas::DrmCanvas;
 use super::drm_events::DrmEventManager;
-use crate::camera::{Camera2d, Camera3d};
-use crate::color::{Color, BLACK};
+use crate::color::BLACK;
 use crate::context::Context;
 use crate::renderer::{PointRenderer2d, PointRenderer3d, PolylineRenderer2d, PolylineRenderer3d};
-use crate::resource::{FramebufferManager, RenderTarget};
+use crate::resource::{FramebufferManager, MaterialManager2d, MeshManager2d, RenderTarget};
 use crate::text::TextRenderer;
-use crate::window::canvas::CanvasInputState;
 #[cfg(feature = "egui")]
 use crate::window::egui_integration::EguiContext;
 #[cfg(feature = "recording")]
 use crate::window::recording::RecordingState;
 use crate::window::window_cache::WindowCache;
-use glamx::UVec2;
 use std::cell::RefCell;
 use std::error::Error;
 use std::rc::Rc;
 
 /// A window for headless 3D rendering using DRM (Direct Rendering Manager).
 ///
-/// This window type allows rendering without a window manager, suitable for
-/// console-only systems like Raspberry Pi setups. It reuses kiss3d's rendering
-/// infrastructure but replaces the windowing system with offscreen buffers.
+/// Suitable for console-only systems such as Raspberry Pi. All rendering logic
+/// (drawing, screenshots, recording, render loop) is shared with the windowed
+/// `Window` through the common `impl` blocks in the sibling modules.
 pub struct Window {
+    // ── DRM-specific ──────────────────────────────────────────────────────
+    pub(crate) canvas: DrmCanvas,
     pub(crate) event_manager: Rc<RefCell<DrmEventManager>>,
-    // pub(crate) events: Rc<Receiver<WindowEvent>>,
-    // pub(crate) unhandled_events: Rc<RefCell<Vec<WindowEvent>>>,
+
+    // ── Shared fields — must mirror window::Window exactly ────────────────
     pub(crate) ambient_intensity: f32,
-    pub(crate) background: Color,
+    pub(crate) background: crate::color::Color,
     pub(crate) polyline_renderer_2d: PolylineRenderer2d,
     pub(crate) point_renderer_2d: PointRenderer2d,
     pub(crate) point_renderer: PointRenderer3d,
@@ -41,85 +40,42 @@ pub struct Window {
     pub(crate) should_close: bool,
     #[cfg(feature = "egui")]
     pub(crate) egui_context: EguiContext,
-    pub(crate) canvas: DrmCanvas,
     #[cfg(feature = "recording")]
     pub(crate) recording: Option<RecordingState>,
 }
 
 impl Window {
-    /// Creates a new DRM window for rendering.
-    ///
-    /// # Arguments
-    /// * `device_path` - Path to the DRM device (e.g., "/dev/dri/card0")
-    /// * `width` - Width of the render target in pixels
-    /// * `height` - Height of the render target in pixels
-    ///
-    /// # Returns
-    /// A new Window ready for rendering, or an error if initialization fails
-    ///
-    /// # Example
-    /// ```no_run
-    /// use kiss3d::prelude::*;
-    ///
-    /// #[kiss3d::main]
-    /// async fn main() {
-    ///     let mut window = Window::new("/dev/dri/card0", 1920, 1080)
-    ///         .await
-    ///         .expect("Failed to create DRM window");
-    ///
-    ///     let mut camera = OrbitCamera3d::default();
-    ///     let mut scene = SceneNode3d::empty();
-    ///
-    ///     while window.render_3d(&mut scene, &mut camera).await {
-    ///         // Your render loop code here
-    ///     }
-    /// }
-    /// ```
-    pub async fn try_new(device_path: &str) -> Result<Self, Box<dyn Error>> {
-        // Create DRM canvas with display output (initializes wgpu headless + DRM/KMS)
-        let canvas = DrmCanvas::new_with_display(device_path).await?;
+    // ── Constructors ──────────────────────────────────────────────────────
 
+    /// Opens a DRM window connected to the given device path, using the
+    /// display's native resolution.
+    pub async fn try_new(device_path: &str) -> Result<Self, Box<dyn Error>> {
+        let canvas = DrmCanvas::new_with_display(device_path).await?;
         Self::new_from_canvas(canvas).await
     }
 
-    /// Creates a new DRM window for offscreen-only rendering (no display output).
+    /// Creates a DRM window in offscreen-only mode (no display output).
     ///
-    /// This mode is useful for:
-    /// - Screenshot/recording without a connected display
-    /// - Server-side rendering
-    /// - Testing without display hardware
-    ///
-    /// # Arguments
-    /// * `width` - Width of the render target in pixels
-    /// * `height` - Height of the render target in pixels
-    ///
-    /// # Returns
-    /// A new Window ready for offscreen rendering (no display output)
+    /// Useful for server-side rendering, testing, or recording without a monitor.
     pub async fn new_offscreen(width: u32, height: u32) -> Result<Self, Box<dyn Error>> {
         log::info!("Creating DRM window (offscreen only): {}x{}", width, height);
-
-        // Create DRM canvas in offscreen mode (no display initialization, no DRM device needed)
         let canvas = DrmCanvas::new(width, height).await?;
-
         Self::new_from_canvas(canvas).await
     }
 
-    /// Internal helper to initialize Window from a DrmCanvas
+    /// Common initialisation shared by all DRM constructors.
     async fn new_from_canvas(canvas: DrmCanvas) -> Result<Self, Box<dyn Error>> {
-        // Initialize window cache (material manager, mesh manager, texture manager)
         WindowCache::populate();
 
-        // Create framebuffer manager
         let framebuffer_manager = FramebufferManager::new();
         let (width, height) = canvas.size();
         let post_process_render_target = framebuffer_manager.new_render_target(width, height, true);
 
-        log::info!("DRM window initialized successfully");
+        log::info!("DRM window initialised successfully");
 
         Ok(Self {
+            canvas,
             event_manager: Rc::new(RefCell::new(DrmEventManager::new_headless())),
-            // events: Rc::new(event_receive),
-            // unhandled_events: Rc::new(RefCell::new(Vec::new())),
             ambient_intensity: 0.2,
             background: BLACK,
             polyline_renderer_2d: PolylineRenderer2d::new(),
@@ -132,12 +88,13 @@ impl Window {
             should_close: false,
             #[cfg(feature = "egui")]
             egui_context: EguiContext::new(),
-            canvas,
             #[cfg(feature = "recording")]
             recording: None,
         })
     }
 
+    /// Opens the first available DRM device. Mirrors the `Window::new(title)` signature
+    /// of the windowed backend so call-sites are interchangeable.
     pub async fn new(_title: &str) -> Self {
         let device_paths = [
             "/dev/dri/card0",
@@ -153,74 +110,17 @@ impl Window {
                     return window;
                 }
                 Err(e) => {
-                    log::trace!("Could not created render target for device {dev}: {e}");
-                    continue;
+                    log::trace!("Could not create render target for device {dev}: {e}");
                 }
             }
         }
-
         log::error!("Could not create any render target!");
         panic!("Could not create any render target!");
     }
 
-    pub fn should_close(&self) -> bool {
-        self.should_close
-    }
+    // ── DRM-specific event source configuration ───────────────────────────
 
-    pub fn close(&mut self) {
-        self.should_close = true;
-    }
-
-    // pub fn check_external_close_signal(&mut self) {
-    //     // Check for SIGTERM, SIGINT, or a control file
-    //     // For example: check if /tmp/kiss3d_stop exists
-    //     self.should_close = std::path::Path::new("/tmp/kiss3d_stop").exists();
-    // }
-
-    /// Returns the width of the render target.
-    #[inline]
-    pub fn width(&self) -> u32 {
-        self.canvas.size().0
-    }
-
-    /// Returns the height of the render target.
-    #[inline]
-    pub fn height(&self) -> u32 {
-        self.canvas.size().1
-    }
-
-    /// Returns the dimensions of the render target.
-    #[inline]
-    pub fn size(&self) -> UVec2 {
-        let (w, h) = self.canvas.size();
-        UVec2::new(w, h)
-    }
-
-    /// Sets the background color for rendering.
-    ///
-    /// # Arguments
-    /// * `color` - The background color to use
-    #[inline]
-    pub fn set_background_color(&mut self, color: Color) {
-        self.background = color;
-    }
-
-    /// Sets the ambient light intensity for the scene.
-    ///
-    /// # Arguments
-    /// * `ambient` - The ambient light intensity (typically 0.0 to 1.0)
-    #[inline]
-    pub fn set_ambient(&mut self, ambient: f32) {
-        self.ambient_intensity = ambient;
-    }
-
-    /// Returns the current ambient lighting intensity.
-    #[inline]
-    pub fn ambient(&self) -> f32 {
-        self.ambient_intensity
-    }
-
-    /// Enable event input from evdev devices
+    /// Switches the event source to evdev input devices (keyboard, mouse, touchscreen).
     #[cfg(target_os = "linux")]
     pub fn enable_evdev_input(&mut self, devices: Vec<String>) -> Result<(), std::io::Error> {
         let manager = DrmEventManager::new_with_evdev(devices)?;
@@ -229,7 +129,7 @@ impl Window {
         Ok(())
     }
 
-    /// Set a custom event source (for network control, GPIO buttons, etc.)
+    /// Switches the event source to a custom channel (GPIO buttons, network control, etc.)
     pub fn set_custom_event_source(
         &mut self,
         receiver: std::sync::mpsc::Receiver<crate::event::WindowEvent>,
@@ -239,64 +139,31 @@ impl Window {
         log::info!("Custom event source enabled");
     }
 
-    /// Handle window events (DRM version)
-    pub(crate) fn handle_events(
-        &mut self,
-        camera: &mut dyn Camera3d,
-        camera_2d: &mut dyn Camera2d,
-    ) {
-        // Poll for new events
-        self.event_manager.borrow_mut().poll_events();
-
-        // Process all accumulated events
-        let events: Vec<_> = self.event_manager.borrow_mut().drain_events().collect();
-
-        for event in events {
-            self.handle_event(camera, camera_2d, &event);
-        }
-    }
-
-    pub(crate) fn handle_event(
-        &mut self,
-        camera: &mut dyn Camera3d,
-        camera_2d: &mut dyn Camera2d,
-        event: &crate::event::WindowEvent,
-    ) {
-        use crate::event::{Action, Key, WindowEvent};
-
-        match *event {
-            WindowEvent::Key(Key::Escape, Action::Release, _) | WindowEvent::Close => {
-                self.close();
-            }
-            _ => {}
-        }
-
-        // Feed events to egui if enabled
-        #[cfg(feature = "egui")]
-        {
-            // TODO: implement feed_egui_event for DRM
-        }
-
-        let input: CanvasInputState<'static> = self.canvas.input_state();
-        camera.handle_event(&input, event);
-        camera_2d.handle_event(&input, event);
+    /// Returns an event manager wrapper that iterates events polled this frame.
+    pub fn events(&self) -> super::drm_events::DrmEventManagerWrapper {
+        super::drm_events::DrmEventManagerWrapper::new(self.event_manager.clone())
     }
 }
 
 impl Drop for Window {
     fn drop(&mut self) {
-        log::info!("Dropping DRM window");
-
-        // Only clean up GPU resources when the last window is dropped
+        // Only clean up GPU resources when the last window is dropped.
+        // This prevents TLS access order issues with wgpu internals that can cause
+        // panics during thread cleanup.
         let is_last_window = Context::decrement_window_count();
 
         if is_last_window {
-            log::info!("Last DRM window dropped, cleaning up resources");
+            // The order matters: clear caches first (which hold references to GPU resources),
+            // then clear the Context (which holds the wgpu Device/Queue/Instance).
 
-            // Clear resource managers
+            // Clear 3D resource managers
             WindowCache::reset();
 
-            // Clear the wgpu context
+            // Clear 2D resource managers
+            MeshManager2d::reset_global_manager();
+            MaterialManager2d::reset_global_manager();
+
+            // Finally, clear the wgpu context itself
             Context::reset();
         }
     }

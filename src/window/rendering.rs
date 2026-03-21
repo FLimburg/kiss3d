@@ -273,9 +273,14 @@ impl Window {
                 return !self.should_close();
             }
         };
-        let frame_view = frame
-            .texture
-            .create_view(&wgpu::TextureViewDescriptor::default());
+        // wgpu::SurfaceTexture has an owned `.texture`; DrmSurfaceTexture has `&wgpu::Texture`.
+        // We take a reference in both cases so the rest of the method is uniform.
+        #[cfg(not(feature = "drm"))]
+        let frame_texture: &wgpu::Texture = &frame.texture;
+        #[cfg(feature = "drm")]
+        let frame_texture: &wgpu::Texture = frame.texture;
+
+        let frame_view = frame_texture.create_view(&wgpu::TextureViewDescriptor::default());
 
         let ctxt = Context::get();
         let mut encoder = ctxt.create_command_encoder(Some("kiss3d_frame_encoder"));
@@ -432,15 +437,17 @@ impl Window {
             );
         }
 
-        // Copy frame to readback texture for snap/snap_rect functionality
+        // Copy frame to readback texture for snap/snap_rect functionality.
         self.canvas.copy_frame_to_readback(&frame);
 
-        // Capture frame for video recording if enabled
+        // Present the frame (moves/drops the frame, releasing any borrow on self.canvas).
+        // This must happen before capture_frame_if_recording, which needs &mut self.
+        self.canvas.present(frame);
+
+        // Capture frame for video recording if enabled.
+        // Must come after present() so the frame borrow is released first.
         #[cfg(feature = "recording")]
         self.capture_frame_if_recording();
-
-        // Present the frame
-        self.canvas.present(frame);
         #[cfg(target_arch = "wasm32")]
         {
             use wasm_bindgen::JsCast;
