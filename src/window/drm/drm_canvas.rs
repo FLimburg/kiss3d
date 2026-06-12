@@ -692,18 +692,70 @@ impl DrmCanvas {
     }
 
     /// Find an available CRTC for the given connector.
+    ///
+    /// This walks through the connector's encoders and checks each encoder's
+    /// `possible_crtcs` bitmask to find a compatible CRTC. This is critical for
+    /// embedded systems (Raspberry Pi, etc.) where CRTCs have fixed routing.
     fn find_available_crtc(
-        _card: &Card,
-        _connector_info: &connector::Info,
+        card: &Card,
+        connector_info: &connector::Info,
         resources: &ResourceHandles,
     ) -> Result<crtc::Handle, DrmCanvasError> {
-        // For simplicity, just use the first available CRTC
-        // A more sophisticated implementation would check encoder compatibility
-        resources
-            .crtcs()
-            .first()
-            .copied()
-            .ok_or_else(|| DrmCanvasError::ModesetError("No CRTCs available".to_string()))
+        log::debug!(
+            "Finding compatible CRTC for connector {:?}",
+            connector_info.handle()
+        );
+
+        // Get all available CRTCs
+        let all_crtcs = resources.crtcs();
+        if all_crtcs.is_empty() {
+            return Err(DrmCanvasError::ModesetError(
+                "No CRTCs available in system".to_string(),
+            ));
+        }
+
+        log::debug!("System has {} CRTCs available", all_crtcs.len());
+
+        // Try each encoder associated with this connector
+        for &encoder_handle in connector_info.encoders() {
+            log::debug!("Checking encoder {:?}", encoder_handle);
+
+            // Get encoder information
+            let encoder = match card.get_encoder(encoder_handle) {
+                Ok(enc) => enc,
+                Err(e) => {
+                    log::warn!("Failed to get encoder {:?}: {}", encoder_handle, e);
+                    continue;
+                }
+            };
+
+            // Get compatible CRTCs for this encoder using the built-in filter
+            let possible_crtcs_mask = encoder.possible_crtcs();
+            let compatible_crtcs = resources.filter_crtcs(possible_crtcs_mask);
+
+            log::debug!(
+                "Encoder {:?} has {} compatible CRTCs",
+                encoder_handle,
+                compatible_crtcs.len()
+            );
+
+            if let Some(&crtc_handle) = compatible_crtcs.first() {
+                log::info!(
+                    "Selected CRTC {:?} for connector {:?} via encoder {:?}",
+                    crtc_handle,
+                    connector_info.handle(),
+                    encoder_handle
+                );
+                return Ok(crtc_handle);
+            }
+        }
+
+        // No compatible CRTC found
+        Err(DrmCanvasError::ModesetError(format!(
+            "No compatible CRTC found for connector {:?}. Connector has {} encoders.",
+            connector_info.handle(),
+            connector_info.encoders().len()
+        )))
     }
 
     /// Select the best display mode (usually the preferred/native mode).
