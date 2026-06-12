@@ -90,12 +90,30 @@ impl Window {
     // ── DRM-specific event source configuration ───────────────────────────
 
     /// Switches the event source to evdev input devices (keyboard, mouse, touchscreen).
+    ///
+    /// **⚠️ NOT YET IMPLEMENTED**: This feature is a stub and will return an error.
+    ///
+    /// Use [`set_custom_event_source()`](Self::set_custom_event_source) instead to provide
+    /// events via a channel. You can implement your own evdev polling in a separate thread
+    /// and send events through the channel.
+    ///
+    /// # Example
+    /// ```ignore
+    /// let (sender, receiver) = std::sync::mpsc::channel();
+    /// window.set_custom_event_source(receiver);
+    ///
+    /// // In another thread: poll evdev and send WindowEvents via sender
+    /// ```
+    ///
+    /// # Errors
+    /// Always returns an error indicating the feature is not implemented.
     #[cfg(target_os = "linux")]
-    pub fn enable_evdev_input(&mut self, devices: Vec<String>) -> Result<(), std::io::Error> {
-        let manager = DrmEventManager::new_with_evdev(devices)?;
-        self.event_manager = Rc::new(RefCell::new(manager));
-        log::info!("Evdev input enabled");
-        Ok(())
+    pub fn enable_evdev_input(&mut self, _devices: Vec<String>) -> Result<(), std::io::Error> {
+        Err(std::io::Error::new(
+            std::io::ErrorKind::Unsupported,
+            "evdev input is not yet implemented. Use set_custom_event_source() instead to \
+             provide events via a channel. See documentation for details.",
+        ))
     }
 
     /// Switches the event source to a custom channel (GPIO buttons, network control, etc.)
