@@ -28,51 +28,12 @@ impl Card {
     }
 }
 
-#[allow(dead_code)]
-pub mod capabilities {
-    use drm::ClientCapability as CC;
-    pub const CLIENT_CAP_ENUMS: &[CC] = &[CC::Stereo3D, CC::UniversalPlanes, CC::Atomic];
-
-    use drm::DriverCapability as DC;
-    pub const DRIVER_CAP_ENUMS: &[DC] = &[
-        DC::DumbBuffer,
-        DC::VBlankHighCRTC,
-        DC::DumbPreferredDepth,
-        DC::DumbPreferShadow,
-        DC::Prime,
-        DC::MonotonicTimestamp,
-        DC::ASyncPageFlip,
-        DC::CursorWidth,
-        DC::CursorHeight,
-        DC::AddFB2Modifiers,
-        DC::PageFlipTarget,
-        DC::CRTCInVBlankEvent,
-        DC::SyncObj,
-        DC::TimelineSyncObj,
-    ];
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
 
     // Since we can't easily mock std::fs::File, we'll need to be more creative with our tests
     // We'll use conditional compilation for tests that need real files
-
-    #[test]
-    fn test_capabilities_constants() {
-        // Test that capability enums are defined and contain expected values
-        assert!(!capabilities::CLIENT_CAP_ENUMS.is_empty());
-        assert!(!capabilities::DRIVER_CAP_ENUMS.is_empty());
-
-        // Check for specific capabilities
-        assert!(capabilities::CLIENT_CAP_ENUMS.contains(&drm::ClientCapability::Stereo3D));
-        assert!(capabilities::CLIENT_CAP_ENUMS.contains(&drm::ClientCapability::UniversalPlanes));
-        assert!(capabilities::CLIENT_CAP_ENUMS.contains(&drm::ClientCapability::Atomic));
-
-        assert!(capabilities::DRIVER_CAP_ENUMS.contains(&drm::DriverCapability::DumbBuffer));
-        assert!(capabilities::DRIVER_CAP_ENUMS.contains(&drm::DriverCapability::Prime));
-    }
 
     // Testing trait implementations via compile-time checks
 

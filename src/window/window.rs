@@ -1,83 +1,27 @@
-//! The kiss3d window.
+//! The kiss3d window (winit-backed). Only compiled when the `drm` feature is off.
 
-use std::cell::RefCell;
+#![cfg(not(feature = "drm"))]
+
 use std::path::Path;
-use std::rc::Rc;
-use std::sync::mpsc::{self, Receiver};
+use std::sync::mpsc;
 use std::sync::Arc;
 
-use crate::color::{Color, BLACK};
+use crate::color::BLACK;
 use crate::context::Context;
-use crate::event::WindowEvent;
-use crate::renderer::{PointRenderer2d, PointRenderer3d, PolylineRenderer2d, PolylineRenderer3d};
-use crate::resource::{
-    FramebufferManager, MaterialManager2d, MeshManager2d, RenderTarget, Texture, TextureManager,
-};
-use crate::text::TextRenderer;
+use crate::resource::{MaterialManager2d, MeshManager2d, Texture, TextureManager};
 use crate::window::canvas::CanvasSetup;
 use crate::window::Canvas;
-use glamx::UVec2;
 use image::{GenericImage, Pixel};
 
-#[cfg(feature = "egui")]
-pub(super) use super::egui_integration::EguiContext;
-#[cfg(feature = "recording")]
-pub(super) use super::recording::RecordingState;
 use super::window_cache::WindowCache;
 
-pub(super) static DEFAULT_WIDTH: u32 = 800u32;
-pub(super) static DEFAULT_HEIGHT: u32 = 600u32;
+pub(crate) static DEFAULT_WIDTH: u32 = 800u32;
+pub(crate) static DEFAULT_HEIGHT: u32 = 600u32;
 
-/// Structure representing a window and a 3D scene.
-///
-/// This is the main interface with the 3d engine.
-pub struct Window {
-    pub(super) events: Rc<Receiver<WindowEvent>>,
-    pub(super) unhandled_events: Rc<RefCell<Vec<WindowEvent>>>,
-    pub(super) ambient_intensity: f32,
-    pub(super) background: Color,
-    pub(super) polyline_renderer_2d: PolylineRenderer2d,
-    pub(super) point_renderer_2d: PointRenderer2d,
-    pub(super) point_renderer: PointRenderer3d,
-    pub(super) polyline_renderer: PolylineRenderer3d,
-    pub(super) text_renderer: TextRenderer,
-    #[allow(dead_code)]
-    pub(super) framebuffer_manager: FramebufferManager,
-    pub(super) post_process_render_target: RenderTarget,
-    pub(super) should_close: bool,
-    #[cfg(feature = "egui")]
-    pub(super) egui_context: EguiContext,
-    pub(super) canvas: Canvas,
-    #[cfg(feature = "recording")]
-    pub(super) recording: Option<RecordingState>,
-}
+// Window struct is defined in window_common.rs.
+use super::window_common::Window;
 
 impl Window {
-    /// Indicates whether this window should be closed.
-    #[inline]
-    pub fn should_close(&self) -> bool {
-        self.should_close
-    }
-
-    /// The window width.
-    #[inline]
-    pub fn width(&self) -> u32 {
-        self.canvas.size().0
-    }
-
-    /// The window height.
-    #[inline]
-    pub fn height(&self) -> u32 {
-        self.canvas.size().1
-    }
-
-    /// The size of the window.
-    #[inline]
-    pub fn size(&self) -> UVec2 {
-        let (w, h) = self.canvas.size();
-        UVec2::new(w, h)
-    }
-
     /// Gets a reference to the underlying canvas.
     ///
     /// This provides access to low-level rendering features like:
@@ -159,15 +103,6 @@ impl Window {
         self.canvas.hide_cursor(hide);
     }
 
-    /// Closes the window.
-    ///
-    /// After calling this method, [`render()`](Self::render) will return `false` on the next frame,
-    /// allowing the render loop to exit gracefully.
-    #[inline]
-    pub fn close(&mut self) {
-        self.should_close = true;
-    }
-
     /// Hides the window without closing it.
     ///
     /// Use [`show()`](Self::show) to make it visible again.
@@ -185,28 +120,6 @@ impl Window {
         self.canvas.show()
     }
 
-    /// Sets the background color for the window.
-    ///
-    /// # Arguments
-    /// * `r` - Red component (0.0 to 1.0)
-    /// * `g` - Green component (0.0 to 1.0)
-    /// * `b` - Blue component (0.0 to 1.0)
-    ///
-    /// # Example
-    /// ```no_run
-    /// # use kiss3d::window::Window;
-    /// # #[kiss3d::main]
-    /// # async fn main() {
-    /// use kiss3d::color::DARK_BLUE;
-    /// let mut window = Window::new("Example").await;
-    /// window.set_background_color(DARK_BLUE);
-    /// # }
-    /// ```
-    #[inline]
-    pub fn set_background_color(&mut self, color: Color) {
-        self.background = color;
-    }
-
     /// Loads a texture from a file and returns a reference to it.
     ///
     /// The texture is managed by the global texture manager and will be reused
@@ -220,43 +133,6 @@ impl Window {
     /// A reference-counted texture that can be applied to scene objects
     pub fn add_texture(&mut self, path: &Path, name: &str) -> Arc<Texture> {
         TextureManager::get_global_manager(|tm| tm.add(path, name))
-    }
-
-    /// Returns the DPI scale factor of the screen.
-    ///
-    /// This is the ratio between physical pixels and logical pixels.
-    /// On high-DPI displays (like Retina displays), this will be greater than 1.0.
-    ///
-    /// # Returns
-    /// The scale factor (e.g., 1.0 for standard displays, 2.0 for Retina displays)
-    pub fn scale_factor(&self) -> f64 {
-        self.canvas.scale_factor()
-    }
-
-    /// Sets the ambient light intensity for the scene.
-    ///
-    /// # Example
-    /// ```no_run
-    /// # use kiss3d::window::Window;
-    /// # use kiss3d::light::Light;
-    /// # use glamx::Vec3;
-    /// # #[kiss3d::main]
-    /// # async fn main() {
-    /// # let mut window = Window::new("Example").await;
-    /// // Set global ambient lighting intensity
-    /// window.set_ambient(0.3);
-    /// # }
-    /// ```
-    ///
-    /// Note: Individual lights should be added to the scene tree using
-    /// `SceneNode3d::add_point_light()`, `add_directional_light()`, or `add_spot_light()`.
-    pub fn set_ambient(&mut self, ambient: f32) {
-        self.ambient_intensity = ambient;
-    }
-
-    /// Returns the current ambient lighting intensity.
-    pub fn ambient(&self) -> f32 {
-        self.ambient_intensity
     }
 
     /// Creates a new hidden window.
@@ -318,7 +194,8 @@ impl Window {
 
     /// Creates a new window with custom setup options.
     ///
-    /// This allows fine-grained control over window creation, including VSync and anti-aliasing settings.
+    /// This allows fine-grained control over window creation, including VSync and
+    /// anti-aliasing settings.
     ///
     /// # Arguments
     /// * `title` - The window title
@@ -350,24 +227,23 @@ impl Window {
 
         // Track window count for proper cleanup
         Context::increment_window_count();
-
         WindowCache::populate();
 
-        let framebuffer_manager = FramebufferManager::new();
+        let framebuffer_manager = crate::resource::FramebufferManager::new();
         let mut usr_window = Window {
             should_close: false,
             canvas,
-            events: Rc::new(event_receive),
-            unhandled_events: Rc::new(RefCell::new(Vec::new())),
+            events: std::rc::Rc::new(event_receive),
+            unhandled_events: std::rc::Rc::new(std::cell::RefCell::new(Vec::new())),
             ambient_intensity: 0.2,
             background: BLACK,
-            polyline_renderer_2d: PolylineRenderer2d::new(),
-            point_renderer_2d: PointRenderer2d::new(),
-            point_renderer: PointRenderer3d::new(),
-            polyline_renderer: PolylineRenderer3d::new(),
-            text_renderer: TextRenderer::new(),
+            polyline_renderer_2d: crate::renderer::PolylineRenderer2d::new(),
+            point_renderer_2d: crate::renderer::PointRenderer2d::new(),
+            point_renderer: crate::renderer::PointRenderer3d::new(),
+            polyline_renderer: crate::renderer::PolylineRenderer3d::new(),
+            text_renderer: crate::text::TextRenderer::new(),
             #[cfg(feature = "egui")]
-            egui_context: EguiContext::new(),
+            egui_context: super::egui_integration::EguiContext::new(),
             post_process_render_target: framebuffer_manager.new_render_target(width, height, true),
             framebuffer_manager,
             #[cfg(feature = "recording")]

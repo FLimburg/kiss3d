@@ -10,10 +10,6 @@ pub enum DrmEventSource {
     /// No event input (default for headless rendering)
     None,
 
-    /// Linux evdev input devices (keyboard, mouse, touchscreen)
-    #[cfg(target_os = "linux")]
-    Evdev(EvdevEventSource),
-
     /// Custom event source (user-provided channel)
     Custom(Receiver<WindowEvent>),
 }
@@ -34,15 +30,6 @@ impl DrmEventManager {
         }
     }
 
-    /// Create a new event manager with evdev input
-    #[cfg(target_os = "linux")]
-    pub fn new_with_evdev(devices: Vec<String>) -> Result<Self, std::io::Error> {
-        Ok(Self {
-            source: DrmEventSource::Evdev(EvdevEventSource::new(devices)?),
-            unhandled_events: Vec::new(),
-        })
-    }
-
     /// Create a new event manager with a custom event channel
     pub fn new_with_custom(receiver: Receiver<WindowEvent>) -> Self {
         Self {
@@ -56,10 +43,6 @@ impl DrmEventManager {
         match &mut self.source {
             DrmEventSource::None => {
                 // No events in headless mode
-            }
-            #[cfg(target_os = "linux")]
-            DrmEventSource::Evdev(evdev) => {
-                evdev.poll_events(&mut self.unhandled_events);
             }
             DrmEventSource::Custom(receiver) => {
                 // Drain all available events from the channel
@@ -90,23 +73,6 @@ impl DrmEventManager {
     /// Clear all unhandled events
     pub fn clear(&mut self) {
         self.unhandled_events.clear();
-    }
-}
-
-#[cfg(target_os = "linux")]
-pub struct EvdevEventSource {
-    _devices: Vec<String>,
-}
-
-#[cfg(target_os = "linux")]
-impl EvdevEventSource {
-    pub fn new(devices: Vec<String>) -> Result<Self, std::io::Error> {
-        log::info!("Evdev event source created for devices: {:?}", devices);
-        Ok(Self { _devices: devices })
-    }
-
-    pub fn poll_events(&mut self, _events: &mut Vec<WindowEvent>) {
-        // TODO: Poll evdev devices and convert to WindowEvents
     }
 }
 
@@ -175,31 +141,5 @@ impl<'a> Drop for DrmEventIterator<'a> {
         // After iteration, move non-inhibited events to the inhibitor list
         // This mimics the behavior of the regular EventManager
         // The inhibitor list will be used by handle_events
-    }
-}
-
-// Add Window implementation
-use super::Window;
-use crate::event::{Action, Key, MouseButton};
-
-impl Window {
-    /// Returns an event manager for accessing window events.
-    pub fn events(&self) -> DrmEventManagerWrapper {
-        DrmEventManagerWrapper::new(self.event_manager.clone())
-    }
-
-    /// Gets the current state of a keyboard key (always Release in headless mode).
-    pub fn get_key(&self, _key: Key) -> Action {
-        Action::Release
-    }
-
-    /// Gets the current state of a mouse button (always Release in headless mode).
-    pub fn get_mouse_button(&self, _button: MouseButton) -> Action {
-        Action::Release
-    }
-
-    /// Gets the cursor position (always None in headless mode).
-    pub fn cursor_pos(&self) -> Option<(f64, f64)> {
-        None
     }
 }

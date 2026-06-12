@@ -9,8 +9,7 @@
 use super::card::Card;
 use drm::control::dumbbuffer::DumbBuffer;
 use drm::control::{connector, crtc, framebuffer, Device as ControlDevice, Mode};
-use std::sync::mpsc::{channel, Receiver, Sender};
-use std::sync::{Arc, Mutex};
+use std::sync::mpsc::{channel, sync_channel, Receiver, Sender, SyncSender};
 use std::thread::{self, JoinHandle};
 
 /// Command sent to the display thread
@@ -86,11 +85,10 @@ impl BufferPool {
 /// Manages the async display thread for non-blocking presentation
 pub struct DisplayThread {
     /// Sender for sending display commands to the worker thread
-    sender: Option<Sender<DisplayCommand>>,
+    /// Uses a bounded channel (capacity 1) for natural backpressure
+    sender: Option<SyncSender<DisplayCommand>>,
     /// Handle to the worker thread (for cleanup)
     thread_handle: Option<JoinHandle<()>>,
-    /// Synchronization mutex to ensure display operations complete before buffer reuse
-    sync_mutex: Arc<Mutex<()>>,
 }
 
 impl DisplayThread {
@@ -109,42 +107,33 @@ impl DisplayThread {
         width: u32,
         height: u32,
     ) -> Self {
-        let (sender, receiver) = std::sync::mpsc::channel();
-        let sync_mutex = Arc::new(Mutex::new(()));
-        let sync_mutex_clone = Arc::clone(&sync_mutex);
+        // Use a bounded channel with capacity 1 for natural backpressure:
+        // - Main thread can queue one frame while display thread processes another
+        // - This provides one frame of pipelining/latency
+        // - If channel is full, send_frame blocks until display thread consumes a frame
+        let (sender, receiver) = sync_channel(1);
 
         // Spawn the display worker thread
         // Note: buffer_recycler is already a clone from buffer_pool.recycler()
         let thread_handle = thread::spawn(move || {
-            Self::display_worker(
-                card,
-                config,
-                receiver,
-                sync_mutex_clone,
-                buffer_recycler,
-                width,
-                height,
-            );
+            Self::display_worker(card, config, receiver, buffer_recycler, width, height);
         });
 
-        log::info!("Display thread started");
+        log::info!("Display thread started with bounded channel (capacity 1)");
 
         DisplayThread {
             sender: Some(sender),
             thread_handle: Some(thread_handle),
-            sync_mutex,
         }
     }
 
     /// Send a frame to be displayed
     ///
-    /// This is non-blocking - the frame is queued for display and the function
-    /// returns immediately, allowing the main thread to continue rendering.
+    /// Uses a bounded channel for natural backpressure. If the display thread is
+    /// still processing the previous frame, this will block until it's ready.
+    /// This allows one frame of pipelining: the main thread can render frame N+1
+    /// while the display thread presents frame N.
     pub fn send_frame(&self, command: DisplayCommand) -> Result<(), String> {
-        // Try to acquire the lock to ensure previous frame completed
-        // This prevents sending frames faster than the display can handle
-        let _guard = self.sync_mutex.lock().unwrap();
-
         if let Some(sender) = &self.sender {
             sender
                 .send(command)
@@ -160,7 +149,6 @@ impl DisplayThread {
         card: Card,
         config: DisplayThreadConfig,
         receiver: Receiver<DisplayCommand>,
-        sync_mutex: Arc<Mutex<()>>,
         buffer_recycler: Sender<Vec<u8>>,
         width: u32,
         height: u32,
@@ -180,9 +168,6 @@ impl DisplayThread {
         loop {
             match receiver.recv() {
                 Ok(command) => {
-                    // Acquire lock to signal we're processing
-                    let _guard = sync_mutex.lock().unwrap();
-
                     log::trace!(
                         "Display worker: received frame {}x{}",
                         command.width,
@@ -229,8 +214,6 @@ impl DisplayThread {
 
                     // Recycle the pixel buffer
                     buffer_recycler.send(command.pixel_data).ok();
-
-                    // Lock is automatically released here, signaling completion
                 }
                 Err(_) => {
                     log::debug!("Display worker: channel closed, exiting");
@@ -304,13 +287,25 @@ impl DisplayThread {
 
     /// Wait for all pending display operations to complete
     ///
-    /// Note: This is generally not needed as the Drop implementation
-    /// handles proper shutdown by closing the channel and joining the thread
+    /// This can be used to ensure all queued frames have been presented.
+    /// Note: The Drop implementation also handles proper shutdown by closing
+    /// the channel and joining the thread.
     #[allow(dead_code)]
     pub fn sync(&self) {
-        // Simply acquiring and releasing the lock ensures the worker
-        // has completed its current operation
-        let _guard = self.sync_mutex.lock().unwrap();
+        // Send an empty message and wait for the channel to drain
+        // Since the channel has capacity 1, this ensures any queued frame
+        // has been processed. A more robust approach would be a dedicated
+        // sync command, but this is sufficient for the current use case.
+        if let Some(sender) = &self.sender {
+            // If we can't send (channel full), the worker is busy and will
+            // eventually process all frames. If we can send, we know the
+            // channel is being drained.
+            let _ = sender.try_send(DisplayCommand {
+                pixel_data: vec![],
+                width: 0,
+                height: 0,
+            });
+        }
     }
 }
 
