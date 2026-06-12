@@ -11,6 +11,7 @@ use super::card::Card;
 use super::display_thread::{BufferPool, DisplayCommand, DisplayThread, DisplayThreadConfig};
 use drm::buffer::DrmFourcc;
 use drm::control::{connector, crtc, Device as ControlDevice, Mode, ResourceHandles};
+use drm::Device;
 
 /// Error type for DRM canvas operations.
 #[derive(Debug)]
@@ -210,6 +211,9 @@ impl DrmCanvas {
         // Step 1: Open DRM device (for querying)
         let card = Card::open(device_path)?;
         log::info!("Opened DRM device: {}", device_path);
+
+        // Step 1.5: Validate required capabilities
+        Self::validate_device_capabilities(&card)?;
 
         // Step 2: Query display resources
         let display_config = Self::query_display_resources(&card)?;
@@ -633,6 +637,38 @@ impl Drop for DrmCanvas {
 }
 
 impl DrmCanvas {
+    /// Validate that the DRM device supports required capabilities.
+    ///
+    /// This checks for capabilities we actually use (like DumbBuffer) to provide
+    /// early, clear error messages rather than cryptic failures later.
+    fn validate_device_capabilities(card: &Card) -> Result<(), DrmCanvasError> {
+        use drm::DriverCapability;
+
+        log::debug!("Validating DRM device capabilities");
+
+        // Check for DumbBuffer support (required for our display pipeline)
+        match card.get_driver_capability(DriverCapability::DumbBuffer) {
+            Ok(value) if value > 0 => {
+                log::debug!("DumbBuffer capability: supported");
+            }
+            Ok(_) => {
+                return Err(DrmCanvasError::Init(
+                    "Device does not support dumb buffers (required for display output)"
+                        .to_string(),
+                ));
+            }
+            Err(e) => {
+                log::warn!(
+                    "Could not query DumbBuffer capability: {}. Proceeding anyway.",
+                    e
+                );
+                // Don't fail - some drivers may not report capabilities properly
+            }
+        }
+
+        Ok(())
+    }
+
     /// Query display resources and find a suitable display configuration.
     fn query_display_resources(card: &Card) -> Result<DisplayConfig, DrmCanvasError> {
         log::info!("Querying DRM display resources");
