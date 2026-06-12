@@ -3,6 +3,7 @@
 use crate::context::Context;
 use crate::resource::OffscreenBuffers;
 use crate::window::canvas::CanvasInputState;
+use std::cell::RefCell;
 use std::error::Error;
 use std::fmt;
 
@@ -96,6 +97,45 @@ struct DrmDisplayState {
     display_thread: DisplayThread,
     /// Buffer pool for recycling pixel buffers
     buffer_pool: BufferPool,
+    /// Pipelined readback manager for non-blocking GPU→CPU transfers
+    /// Wrapped in RefCell for interior mutability (accessed only from render thread)
+    readback_pipeline: RefCell<ReadbackPipeline>,
+}
+
+/// Manages pipelined GPU→CPU readback with multiple staging buffers
+struct ReadbackPipeline {
+    /// Rotating staging buffers (typically 2-3 for double/triple buffering)
+    staging_buffers: Vec<StagingBuffer>,
+    /// Index of the next staging buffer to use
+    next_buffer_idx: usize,
+    /// Frame dimensions
+    width: u32,
+    height: u32,
+    /// Bytes per row (padded to alignment)
+    padded_bytes_per_row: usize,
+    /// Bytes per row (unpadded, actual pixel data)
+    stride: usize,
+}
+
+/// A single staging buffer with its readback state
+struct StagingBuffer {
+    /// wgpu buffer for GPU→CPU transfer
+    buffer: wgpu::Buffer,
+    /// Current state of this buffer
+    state: ReadbackState,
+}
+
+/// State of a staging buffer in the readback pipeline
+enum ReadbackState {
+    /// Buffer is available for new readback
+    Available,
+    /// GPU copy has been submitted, waiting for completion
+    Pending {
+        /// Channel to receive map completion notification
+        receiver: std::sync::mpsc::Receiver<Result<(), wgpu::BufferAsyncError>>,
+    },
+    /// Buffer is mapped and ready to read
+    Ready,
 }
 
 impl DrmCanvas {
@@ -227,10 +267,19 @@ impl DrmCanvas {
             display_config.height,
         );
 
-        // Step 8: Create display state
+        // Step 8: Create pipelined readback for non-blocking GPU→CPU transfers
+        log::info!("Creating pipelined readback system...");
+        let readback_pipeline = ReadbackPipeline::new(
+            display_config.width,
+            display_config.height,
+            3, // Triple buffering: can have 2 in flight + 1 being read
+        );
+
+        // Step 9: Create display state
         let display_state = DrmDisplayState {
             display_thread,
             buffer_pool,
+            readback_pipeline: RefCell::new(readback_pipeline),
         };
 
         log::info!("DRM canvas with display created successfully");
@@ -333,43 +382,41 @@ impl DrmCanvas {
                 // No-op for offscreen rendering
             }
             RenderMode::Display(display) => {
-                log::debug!("Present: starting frame presentation");
+                log::debug!("Present: starting pipelined frame presentation");
 
-                let width = self.surface_config.width;
-                let height = self.surface_config.height;
+                // Step 1: Check if any previous frame readback has completed
+                if let Some(pixel_data) = display.readback_pipeline.borrow_mut().poll_ready_frame()
+                {
+                    // Step 2: Send completed frame to display thread
+                    let command = DisplayCommand {
+                        pixel_data,
+                        width: self.surface_config.width,
+                        height: self.surface_config.height,
+                    };
 
-                // Step 1: Get a buffer from the pool (blocks if none available)
-                let mut pixel_buffer = display.buffer_pool.try_get_buffer().unwrap_or_else(|| {
-                    log::warn!("No buffer available, allocating new buffer");
-                    vec![0u8; (width * height * 4) as usize]
-                });
-
-                // Step 2: Read GPU texture into the CPU buffer
-                if let Err(e) = Self::read_texture_to_buffer(
-                    &self.offscreen_buffers.color_texture,
-                    &mut pixel_buffer,
-                    width,
-                    height,
-                ) {
-                    log::error!("Present: failed to read GPU texture: {}", e);
-                    return;
-                }
-                log::debug!("Present: read GPU texture to CPU buffer");
-
-                // Step 3: Send pixel data to display thread (non-blocking!)
-                let command = DisplayCommand {
-                    pixel_data: pixel_buffer,
-                    width,
-                    height,
-                };
-
-                if let Err(e) = display.display_thread.send_frame(command) {
-                    log::error!("Failed to send frame to display thread: {}", e);
-                    return;
+                    // Step 3: Send to display thread (may block if channel is full)
+                    if let Err(e) = display.display_thread.send_frame(command) {
+                        log::error!("Failed to send frame to display thread: {}", e);
+                    } else {
+                        log::trace!("Frame sent to display thread");
+                    }
+                } else {
+                    log::trace!("No ready frame yet, continuing");
                 }
 
-                log::trace!("Frame queued for async display - main thread continues");
-                log::debug!("Present: complete");
+                // Step 4: Start readback for the current frame (non-blocking)
+                // This initiates GPU→CPU copy that will complete asynchronously
+                if display
+                    .readback_pipeline
+                    .borrow_mut()
+                    .start_readback(&self.offscreen_buffers.color_texture)
+                {
+                    log::trace!("Readback started for current frame");
+                } else {
+                    log::trace!("Readback skipped: all staging buffers busy");
+                }
+
+                log::debug!("Present: complete (non-blocking)");
             }
         }
     }
@@ -778,6 +825,192 @@ impl DrmCanvas {
         Ok(())
     }
 }
+
+impl ReadbackPipeline {
+    /// Create a new pipelined readback system with multiple staging buffers
+    fn new(width: u32, height: u32, num_buffers: usize) -> Self {
+        let ctxt = Context::get();
+
+        // Calculate buffer layout with proper alignment
+        let bytes_per_pixel = 4; // RGBA/XRGB
+        let unpadded_bytes_per_row = width as usize * bytes_per_pixel;
+        let align = wgpu::COPY_BYTES_PER_ROW_ALIGNMENT as usize;
+        let padded_bytes_per_row = unpadded_bytes_per_row.div_ceil(align) * align;
+        let buffer_size = padded_bytes_per_row * height as usize;
+
+        log::info!(
+            "Readback pipeline: {}x{}, {} buffers, {} bytes per buffer",
+            width,
+            height,
+            num_buffers,
+            buffer_size
+        );
+
+        // Create staging buffers
+        let staging_buffers = (0..num_buffers)
+            .map(|i| {
+                let buffer = ctxt.create_buffer(&wgpu::BufferDescriptor {
+                    label: Some(&format!("readback_staging_{}", i)),
+                    size: buffer_size as u64,
+                    usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
+                    mapped_at_creation: false,
+                });
+                StagingBuffer {
+                    buffer,
+                    state: ReadbackState::Available,
+                }
+            })
+            .collect();
+
+        Self {
+            staging_buffers,
+            next_buffer_idx: 0,
+            width,
+            height,
+            padded_bytes_per_row,
+            stride: unpadded_bytes_per_row,
+        }
+    }
+
+    /// Start a GPU→CPU copy for the given texture (non-blocking)
+    /// Returns true if a copy was started, false if no buffers available
+    fn start_readback(&mut self, texture: &wgpu::Texture) -> bool {
+        let ctxt = Context::get();
+
+        // Find an available staging buffer
+        let buffer_idx = match self.find_available_buffer() {
+            Some(idx) => idx,
+            None => {
+                log::trace!("Readback skipped: all staging buffers busy");
+                return false;
+            }
+        };
+
+        let staging = &mut self.staging_buffers[buffer_idx];
+
+        // Issue GPU copy command
+        let mut encoder = ctxt.create_command_encoder(Some("readback_copy"));
+        encoder.copy_texture_to_buffer(
+            wgpu::TexelCopyTextureInfo {
+                texture,
+                mip_level: 0,
+                origin: wgpu::Origin3d::ZERO,
+                aspect: wgpu::TextureAspect::All,
+            },
+            wgpu::TexelCopyBufferInfo {
+                buffer: &staging.buffer,
+                layout: wgpu::TexelCopyBufferLayout {
+                    offset: 0,
+                    bytes_per_row: Some(self.padded_bytes_per_row as u32),
+                    rows_per_image: Some(self.height),
+                },
+            },
+            wgpu::Extent3d {
+                width: self.width,
+                height: self.height,
+                depth_or_array_layers: 1,
+            },
+        );
+        ctxt.submit(std::iter::once(encoder.finish()));
+
+        // Start async map operation
+        let buffer_slice = staging.buffer.slice(..);
+        let (tx, rx) = std::sync::mpsc::channel();
+        buffer_slice.map_async(wgpu::MapMode::Read, move |result| {
+            tx.send(result).ok();
+        });
+
+        // Update state to Pending
+        staging.state = ReadbackState::Pending { receiver: rx };
+
+        log::trace!("Readback started on staging buffer {}", buffer_idx);
+        true
+    }
+
+    /// Poll for completed readbacks and extract pixel data
+    /// Returns Some(pixels) if a frame is ready, None otherwise
+    fn poll_ready_frame(&mut self) -> Option<Vec<u8>> {
+        let ctxt = Context::get();
+
+        // Non-blocking poll to advance GPU work
+        let _ = ctxt.device.poll(wgpu::PollType::Poll);
+
+        // Check all buffers for ready frames
+        for staging in &mut self.staging_buffers {
+            if let ReadbackState::Pending { receiver } = &staging.state {
+                // Try to receive map result (non-blocking)
+                match receiver.try_recv() {
+                    Ok(Ok(())) => {
+                        // Buffer is now mapped and ready to read
+                        staging.state = ReadbackState::Ready;
+                    }
+                    Ok(Err(e)) => {
+                        log::error!("Buffer map failed: {:?}", e);
+                        staging.state = ReadbackState::Available;
+                        continue;
+                    }
+                    Err(std::sync::mpsc::TryRecvError::Empty) => {
+                        // Still pending
+                        continue;
+                    }
+                    Err(std::sync::mpsc::TryRecvError::Disconnected) => {
+                        log::error!("Map callback channel disconnected");
+                        staging.state = ReadbackState::Available;
+                        continue;
+                    }
+                }
+            }
+
+            // If we reach here and state is Ready, extract the data
+            if matches!(staging.state, ReadbackState::Ready) {
+                let buffer_slice = staging.buffer.slice(..);
+                let mapped_data = buffer_slice.get_mapped_range();
+
+                // Allocate output buffer
+                let output_size = self.stride * self.height as usize;
+                let mut pixels = vec![0u8; output_size];
+
+                // Copy data, handling potential stride differences
+                if self.padded_bytes_per_row == self.stride {
+                    // Fast path: strides match
+                    pixels[..output_size].copy_from_slice(&mapped_data[..output_size]);
+                } else {
+                    // Slow path: copy row by row
+                    for y in 0..self.height as usize {
+                        let src_row_start = y * self.padded_bytes_per_row;
+                        let dst_row_start = y * self.stride;
+                        pixels[dst_row_start..dst_row_start + self.stride].copy_from_slice(
+                            &mapped_data[src_row_start..src_row_start + self.stride],
+                        );
+                    }
+                }
+
+                drop(mapped_data);
+                staging.buffer.unmap();
+                staging.state = ReadbackState::Available;
+
+                log::trace!("Frame extracted from staging buffer");
+                return Some(pixels);
+            }
+        }
+
+        None
+    }
+
+    /// Find an available staging buffer
+    fn find_available_buffer(&mut self) -> Option<usize> {
+        // Try to find an Available buffer starting from next_buffer_idx
+        for i in 0..self.staging_buffers.len() {
+            let idx = (self.next_buffer_idx + i) % self.staging_buffers.len();
+            if matches!(self.staging_buffers[idx].state, ReadbackState::Available) {
+                self.next_buffer_idx = (idx + 1) % self.staging_buffers.len();
+                return Some(idx);
+            }
+        }
+        None
+    }
+}
+
 impl<'a> Drop for DrmSurfaceTexture<'a> {
     fn drop(&mut self) {
         // No-op: DRM doesn't need to present on drop like regular SurfaceTexture
