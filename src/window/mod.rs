@@ -21,7 +21,7 @@ mod window;
 mod window_cache;
 mod window_common;
 
-pub use canvas::{Canvas, CanvasSetup, NumSamples};
+pub use canvas::{Canvas, CanvasInputState, CanvasSetup, NumSamples};
 #[cfg(feature = "egui")]
 pub use inspector::{Inspector, InspectorTab};
 #[cfg(not(target_arch = "wasm32"))]
@@ -29,5 +29,8 @@ pub use offscreen::OffscreenSurface;
 #[cfg(feature = "recording")]
 pub use recording::RecordingConfig;
 pub use wgpu_canvas::WgpuCanvas;
+#[cfg(not(feature = "drm"))]
+pub use window::Window;
 pub(crate) use window_cache::WINDOW_CACHE;
+#[cfg(feature = "drm")]
 pub use window_common::Window;
