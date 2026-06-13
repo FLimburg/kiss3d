@@ -3,6 +3,7 @@ use std::sync::mpsc::Sender;
 use crate::event::{Action, Key, MouseButton, WindowEvent};
 use crate::window::WgpuCanvas;
 use image::{GenericImage, Pixel};
+use winit::window::WindowAttributes;
 
 /// Static fully-released key/button tables used by the headless/DRM variant.
 static HEADLESS_KEYS: [Action; Key::Unknown as usize + 1] =
@@ -74,18 +75,10 @@ impl<'a> CanvasInputState<'a> {
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum NumSamples {
-    /// Multisampling disabled.
-    Zero = 0,
     /// One sample
     One = 1,
-    /// Two samples
-    Two = 2,
     /// Four samples
     Four = 4,
-    /// Eight samples
-    Eight = 8,
-    /// Sixteen samples
-    Sixteen = 16,
 }
 
 impl NumSamples {
@@ -93,18 +86,14 @@ impl NumSamples {
     /// Returns `None` if `i` is invalid.
     pub fn from_u32(i: u32) -> Option<NumSamples> {
         match i {
-            0 => Some(NumSamples::Zero),
             1 => Some(NumSamples::One),
-            2 => Some(NumSamples::Two),
             4 => Some(NumSamples::Four),
-            8 => Some(NumSamples::Eight),
-            16 => Some(NumSamples::Sixteen),
             _ => None,
         }
     }
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 /// Canvas options.
 pub struct CanvasSetup {
@@ -112,6 +101,30 @@ pub struct CanvasSetup {
     pub vsync: bool,
     /// Number of AA samples.
     pub samples: NumSamples,
+    /// The id of the canvas element to use (WASM only).
+    /// Defaults to `"canvas"`. If an element with this id exists in the DOM,
+    /// it will be used; otherwise a new canvas element with this id is created.
+    ///
+    /// # Example
+    /// ```no_run
+    /// # use kiss3d::window::{Window, CanvasSetup};
+    /// let setup = CanvasSetup {
+    ///     canvas_id: "my-3d-canvas".to_string(),
+    ///     ..Default::default()
+    /// };
+    /// let mut window = Window::new_with_setup("Title", 800, 600, setup);
+    /// ```
+    pub canvas_id: String,
+}
+
+impl Default for CanvasSetup {
+    fn default() -> Self {
+        CanvasSetup {
+            vsync: true,
+            samples: NumSamples::Four,
+            canvas_id: "canvas".to_string(),
+        }
+    }
 }
 
 /// An abstract structure representing a window for native applications, and a canvas for web applications.
@@ -122,15 +135,25 @@ pub struct Canvas {
 impl Canvas {
     /// Open a new window, and initialize the wgpu context.
     pub async fn open(
-        title: &str,
-        hide: bool,
+        window_attrs: WindowAttributes,
+        canvas_setup: Option<CanvasSetup>,
+        out_events: Sender<WindowEvent>,
+    ) -> Self {
+        Canvas {
+            canvas: WgpuCanvas::open(window_attrs, canvas_setup, out_events).await,
+        }
+    }
+
+    /// Open a headless canvas (no window) for off-screen rendering.
+    #[cfg(not(target_arch = "wasm32"))]
+    pub async fn open_headless(
         width: u32,
         height: u32,
         canvas_setup: Option<CanvasSetup>,
         out_events: Sender<WindowEvent>,
     ) -> Self {
         Canvas {
-            canvas: WgpuCanvas::open(title, hide, width, height, canvas_setup, out_events).await,
+            canvas: WgpuCanvas::open_headless(width, height, canvas_setup, out_events).await,
         }
     }
 
@@ -139,8 +162,13 @@ impl Canvas {
         self.canvas.poll_events()
     }
 
+    /// Resizes the canvas render targets.
+    pub fn resize(&mut self, width: u32, height: u32) {
+        self.canvas.resize(width, height)
+    }
+
     /// Gets the current surface texture for rendering.
-    pub fn get_current_texture(&self) -> Result<wgpu::SurfaceTexture, wgpu::SurfaceError> {
+    pub fn get_current_texture(&self) -> Option<wgpu::SurfaceTexture> {
         self.canvas.get_current_texture()
     }
 
@@ -162,6 +190,22 @@ impl Canvas {
     /// Gets the sample count for MSAA.
     pub fn sample_count(&self) -> u32 {
         self.canvas.sample_count()
+    }
+
+    /// Sets the MSAA sample count, recreating the render targets to match. Takes
+    /// effect on the next rendered frame.
+    pub fn set_samples(&mut self, samples: NumSamples) {
+        self.canvas.set_sample_count(samples as u32)
+    }
+
+    /// Whether vsync is currently enabled.
+    pub fn vsync(&self) -> bool {
+        self.canvas.vsync()
+    }
+
+    /// Enables/disables vsync at runtime (reconfigures the surface present mode).
+    pub fn set_vsync(&mut self, enabled: bool) {
+        self.canvas.set_vsync(enabled)
     }
 
     /// Gets the surface format.
@@ -249,6 +293,14 @@ impl Canvas {
     /// Copies the frame texture to the readback texture for later reading.
     pub fn copy_frame_to_readback(&self, frame: &wgpu::SurfaceTexture) {
         self.canvas.copy_frame_to_readback(frame)
+    }
+
+    /// Copies an arbitrary texture into the readback texture used by `read_pixels`.
+    ///
+    /// The source texture must have `COPY_SRC` usage and the same size and
+    /// format as the surface.
+    pub fn copy_texture_to_readback(&self, src: &wgpu::Texture) {
+        self.canvas.copy_texture_to_readback(src)
     }
 
     /// Reads pixels from the readback texture into the provided buffer.

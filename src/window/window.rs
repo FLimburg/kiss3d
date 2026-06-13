@@ -6,22 +6,198 @@ use std::path::Path;
 use std::sync::mpsc;
 use std::sync::Arc;
 
-use crate::color::BLACK;
+use crate::builtin::ShadowMapper;
+use crate::camera::{Camera3d, FixedView2d};
+use crate::color::{Color, BLACK};
 use crate::context::Context;
-use crate::resource::{MaterialManager2d, MeshManager2d, Texture, TextureManager};
+use crate::event::{Key, Modifiers, WindowEvent};
+use crate::post_processing::{HdrPipeline, HdrSettings, Tonemap};
+use crate::renderer::timings::GpuTimer;
+use crate::renderer::{
+    PointRenderer2d, PointRenderer3d, PolylineRenderer2d, PolylineRenderer3d, RayTracer,
+    RenderTimings,
+};
+use crate::resource::{
+    FramebufferManager, MaterialManager2d, MeshManager2d, RenderTarget, Texture, TextureManager,
+};
+use crate::scene::SceneNode3d;
+use crate::text::TextRenderer;
 use crate::window::canvas::CanvasSetup;
-use crate::window::Canvas;
+use crate::window::{Canvas, NumSamples};
+use glamx::UVec2;
 use image::{GenericImage, Pixel};
+use winit::dpi::LogicalSize;
+use winit::window::WindowAttributes;
 
 use super::window_cache::WindowCache;
 
 pub(crate) static DEFAULT_WIDTH: u32 = 800u32;
 pub(crate) static DEFAULT_HEIGHT: u32 = 600u32;
 
-// Window struct is defined in window_common.rs.
-use super::window_common::Window;
+/// Default per-layer resolution of the rasterizer shadow atlas. 2048 balances
+/// shadow sharpness against the per-frame cost of clearing/rasterizing the atlas
+/// (a point light alone uses six faces); raise it with
+/// [`Window::set_shadow_resolution`] for crisper shadows, lower it to save memory
+/// and fill (the atlas is `resolution² × MAX_SHADOW_VIEWS`).
+pub(super) static DEFAULT_SHADOW_RESOLUTION: u32 = 2048u32;
+
+/// Structure representing a window and a 3D scene.
+///
+/// This is the main interface with the 3d engine.
+pub struct Window {
+    pub(super) events: Rc<Receiver<WindowEvent>>,
+    pub(super) unhandled_events: Rc<RefCell<Vec<WindowEvent>>>,
+    pub(super) ambient_intensity: f32,
+    pub(super) ambient_color: Color,
+    pub(super) fog: crate::light::Fog,
+    pub(super) background: Color,
+    pub(super) polyline_renderer_2d: PolylineRenderer2d,
+    pub(super) point_renderer_2d: PointRenderer2d,
+    pub(super) point_renderer: PointRenderer3d,
+    pub(super) polyline_renderer: PolylineRenderer3d,
+    pub(super) text_renderer: TextRenderer,
+    pub(super) framebuffer_manager: FramebufferManager,
+    /// Real-time shadow mapper for the rasterization pipeline.
+    pub(super) shadow_mapper: ShadowMapper,
+    /// HDR film + tonemap + bloom resolve stage for the rasterizer. The scene is
+    /// rendered into its `Rgba16Float` target, then tonemapped into the LDR
+    /// swapchain/offscreen output. See [`HdrPipeline`].
+    pub(super) hdr: HdrPipeline,
+    /// Equirectangular skybox drawn as the rasterizer's scene background.
+    pub(super) skybox: crate::renderer::Skybox,
+    /// Screen-space ambient occlusion (created on first enable).
+    pub(super) ssao: Option<crate::renderer::Ssao>,
+    pub(super) ssao_enabled: bool,
+    /// Clustered forward+ lighting (created on first frame when the backend
+    /// supports compute + fragment storage buffers; otherwise stays `None` and the
+    /// object material falls back to the fixed 8-light path).
+    pub(super) clustered: Option<crate::builtin::clustered::Clustered>,
+    /// Reflection probes (localized parallax-corrected environment maps). Created
+    /// on first probe registration; `None` means no probes.
+    pub(super) reflection_probes: Option<crate::renderer::ReflectionProbes>,
+    /// Reusable GPU targets for runtime probe capture (created on first capture).
+    pub(super) probe_capture: Option<crate::renderer::ProbeCapture>,
+    /// Probe indices queued for a runtime scene capture next frame.
+    pub(super) pending_probe_captures: Vec<usize>,
+    /// Render-layer mask used when capturing reflection probes. Defaults to all
+    /// layers; set it to exclude dynamic objects (which SSR reflects more
+    /// accurately) so a single-point probe doesn't distort nearby geometry.
+    pub(super) reflection_capture_layers: u32,
+    /// Screen-space reflections (created on first enable when the backend supports
+    /// it; stays `None` / inactive on WebGL2).
+    pub(super) ssr: Option<crate::renderer::Ssr>,
+    pub(super) ssr_enabled: bool,
+    /// Depth of field (created on first enable). Shares the geometry prepass with
+    /// SSAO/SSR for the view-position depth it blurs by.
+    pub(super) dof: Option<crate::renderer::Dof>,
+    pub(super) dof_enabled: bool,
+    /// Refraction background snapshot for glass (created on first use). Built from
+    /// the resolved scene each frame that contains refractive surfaces.
+    pub(super) transmission: Option<crate::renderer::Transmission>,
+    pub(super) transmission_enabled: bool,
+    pub(super) post_process_render_target: RenderTarget,
+    /// Offscreen render target used when the window is hidden, so `snap` and
+    /// recording work without a presentable surface. Created on first use.
+    pub(super) offscreen_output_target: Option<RenderTarget>,
+    /// Renderer for auxiliary outputs (depth, normals, segmentation). Created
+    /// on first use of an AOV-producing method.
+    pub(super) aov_renderer: Option<crate::builtin::AovRenderer>,
+    /// Whether the window is hidden. Hidden windows render offscreen.
+    pub(super) hidden: bool,
+    pub(super) should_close: bool,
+    /// `true` until the first surface texture has been successfully acquired.
+    /// While set, frame acquisition retries (pumping window events) instead of
+    /// skipping, so a freshly created window reliably renders its first frame.
+    pub(super) first_frame: bool,
+    pub(super) close_key: Option<Key>,
+    pub(super) close_modifiers: Option<Modifiers>,
+    /// Per-step timings of the most recently rendered frame, for the active
+    /// renderer. `None` until the first frame. See [`Window::render_timings`].
+    pub(super) last_timings: Option<RenderTimings>,
+    /// Instant the previous frame started, to derive the wall-clock frame-to-frame
+    /// period ([`RenderTimings::frame_wall`]). `None` until the first frame.
+    pub(super) last_frame_instant: Option<web_time::Instant>,
+    /// GPU timestamp-query timer (disabled if the device lacks `TIMESTAMP_QUERY`).
+    pub(super) gpu_timer: GpuTimer,
+    #[cfg(feature = "egui")]
+    pub(super) egui_context: EguiContext,
+    pub(super) canvas: Canvas,
+    #[cfg(feature = "recording")]
+    pub(super) recording: Option<RecordingState>,
+    // NOTE: the boolean is used to avoid borrowcheker issues with
+    //       the event-based switching.
+    #[cfg(feature = "rt_switcher")]
+    pub(super) raytracer: (Option<RayTracer>, bool),
+}
 
 impl Window {
+    /// Indicates whether this window should be closed.
+    #[inline]
+    pub fn should_close(&self) -> bool {
+        self.should_close
+    }
+
+    /// The window width.
+    #[inline]
+    pub fn width(&self) -> u32 {
+        self.canvas.size().0
+    }
+
+    /// The window height.
+    #[inline]
+    pub fn height(&self) -> u32 {
+        self.canvas.size().1
+    }
+
+    /// The size of the window.
+    #[inline]
+    pub fn size(&self) -> UVec2 {
+        let (w, h) = self.canvas.size();
+        UVec2::new(w, h)
+    }
+
+    /// The current number of MSAA samples (`1` means multisampling is disabled).
+    #[inline]
+    pub fn samples(&self) -> u32 {
+        self.canvas.sample_count()
+    }
+
+    /// Sets the number of MSAA samples used for rendering, recreating the render
+    /// targets to match. The change takes effect on the next rendered frame.
+    ///
+    /// This is the runtime equivalent of [`CanvasSetup::samples`]; it lets you toggle
+    /// or change anti-aliasing after the window has been created.
+    ///
+    /// # Example
+    /// ```no_run
+    /// # use kiss3d::window::{Window, NumSamples};
+    /// # async fn f(window: &mut Window) {
+    /// window.set_samples(NumSamples::Four);
+    /// # }
+    /// ```
+    #[inline]
+    pub fn set_samples(&mut self, samples: NumSamples) {
+        self.canvas.set_samples(samples);
+    }
+
+    /// Whether vsync is currently enabled (vsync is on by default).
+    #[inline]
+    pub fn vsync(&self) -> bool {
+        self.canvas.vsync()
+    }
+
+    /// Enables or disables vsync at runtime, reconfiguring the surface present mode
+    /// (`AutoVsync` ↔ `AutoNoVsync`); takes effect on the next presented frame.
+    ///
+    /// With vsync **off**, frames present uncapped (as fast as the GPU produces
+    /// them) instead of being paced to the display refresh — useful for measuring
+    /// GPU-bound throughput via the wall-clock frame time. No effect on a hidden /
+    /// offscreen window (which has no presentable surface).
+    #[inline]
+    pub fn set_vsync(&mut self, enabled: bool) {
+        self.canvas.set_vsync(enabled);
+    }
+
     /// Gets a reference to the underlying canvas.
     ///
     /// This provides access to low-level rendering features like:
@@ -37,6 +213,67 @@ impl Window {
     #[inline]
     pub fn canvas_mut(&mut self) -> &mut Canvas {
         &mut self.canvas
+    }
+
+    #[cfg(feature = "rt_switcher")]
+    pub fn raytracer_mut(&mut self) -> Option<&mut RayTracer> {
+        self.raytracer.0.as_mut()
+    }
+
+    #[cfg(feature = "rt_switcher")]
+    pub fn set_raytracer(&mut self, rt: Option<RayTracer>) {
+        self.raytracer.0 = rt;
+    }
+
+    /// Timings of the most recently rendered frame.
+    ///
+    /// Returns `None` until the first frame has been rendered. The timings are
+    /// for whichever renderer ran last (rasterizer or path tracer): per-pass GPU
+    /// execution times from timestamp queries (when the device supports them),
+    /// plus CPU wall-clock for the submit/present calls and the whole frame. See
+    /// [`RenderTimings`]. The built-in inspector displays them.
+    #[inline]
+    pub fn render_timings(&self) -> Option<&RenderTimings> {
+        self.last_timings.as_ref()
+    }
+
+    /// Renders one frame of a 3D scene with the GPU path tracer.
+    ///
+    /// This is the ray-traced counterpart of [`render_3d`](Self::render_3d). It
+    /// bypasses the rasterizer and instead path-traces the scene, progressively
+    /// accumulating samples for a photorealistic image. Keep the same
+    /// [`RayTracer`] across frames so accumulation can converge; it restarts
+    /// automatically when the camera moves, the window is resized, or the scene
+    /// changes.
+    ///
+    /// If the path tracer is disabled (see [`RayTracer::set_enabled`]), this
+    /// renders the scene with the rasterizer instead, so the same render call
+    /// can switch between the two renderers without restructuring the loop.
+    ///
+    /// # Example
+    /// ```no_run
+    /// use kiss3d::prelude::*;
+    /// use kiss3d::renderer::RayTracer;
+    ///
+    /// #[kiss3d::main]
+    /// async fn main() {
+    ///     let mut window = Window::new("Ray tracing").await;
+    ///     let mut camera = OrbitCamera3d::default();
+    ///     let mut scene = SceneNode3d::empty();
+    ///     let mut raytracer = RayTracer::new();
+    ///
+    ///     while window.raytrace_3d(&mut scene, &mut camera, &mut raytracer).await {}
+    /// }
+    /// ```
+    pub async fn raytrace_3d(
+        &mut self,
+        scene: &mut SceneNode3d,
+        camera: &mut dyn Camera3d,
+        raytracer: &mut RayTracer,
+    ) -> bool {
+        let mut default_cam2 = FixedView2d::default();
+        self.handle_events(camera, &mut default_cam2);
+        self.raytrace_3d_frame(scene, camera, raytracer).await
     }
 
     /// Sets the window title.
@@ -109,6 +346,7 @@ impl Window {
     /// The window continues to exist and can be shown again later.
     #[inline]
     pub fn hide(&mut self) {
+        self.hidden = true;
         self.canvas.hide()
     }
 
@@ -117,6 +355,7 @@ impl Window {
     /// Use [`hide()`](Self::hide) to hide it again.
     #[inline]
     pub fn show(&mut self) {
+        self.hidden = false;
         self.canvas.show()
     }
 
@@ -135,10 +374,441 @@ impl Window {
         TextureManager::get_global_manager(|tm| tm.add(path, name))
     }
 
+    /// Returns the DPI scale factor of the screen.
+    ///
+    /// This is the ratio between physical pixels and logical pixels.
+    /// On high-DPI displays (like Retina displays), this will be greater than 1.0.
+    ///
+    /// # Returns
+    /// The scale factor (e.g., 1.0 for standard displays, 2.0 for Retina displays)
+    pub fn scale_factor(&self) -> f64 {
+        self.canvas.scale_factor()
+    }
+
+    /// Sets the ambient light intensity for the scene.
+    ///
+    /// # Example
+    /// ```no_run
+    /// # use kiss3d::window::Window;
+    /// # use kiss3d::light::Light;
+    /// # use glamx::Vec3;
+    /// # #[kiss3d::main]
+    /// # async fn main() {
+    /// # let mut window = Window::new("Example").await;
+    /// // Set global ambient lighting intensity
+    /// window.set_ambient(0.3);
+    /// # }
+    /// ```
+    ///
+    /// Note: Individual lights should be added to the scene tree using
+    /// `SceneNode3d::add_point_light()`, `add_directional_light()`, or `add_spot_light()`.
+    pub fn set_ambient(&mut self, ambient: f32) {
+        self.ambient_intensity = ambient;
+    }
+
+    /// Returns the current ambient lighting intensity.
+    pub fn ambient(&self) -> f32 {
+        self.ambient_intensity
+    }
+
+    /// Sets the global ambient light color.
+    ///
+    /// The ambient term added to every surface is `ambient_color * ambient *
+    /// albedo * ao`, so the color tints the fill light while
+    /// [`set_ambient`](Self::set_ambient) controls its brightness. Defaults to
+    /// white.
+    pub fn set_ambient_color(&mut self, color: Color) {
+        self.ambient_color = color;
+    }
+
+    /// Returns the current ambient light color.
+    pub fn ambient_color(&self) -> Color {
+        self.ambient_color
+    }
+
+    /// Sets the distance fog applied to the rasterized scene.
+    ///
+    /// Pass a [`Fog`](crate::light::Fog) describing the falloff curve and color,
+    /// or [`Fog::default()`](crate::light::Fog::default) (mode [`FogMode::Off`](crate::light::FogMode::Off))
+    /// to disable fog. Fog blends shaded fragments toward the fog color by their
+    /// view-space distance from the camera.
+    ///
+    /// # Example
+    /// ```no_run
+    /// # use kiss3d::prelude::*;
+    /// # #[kiss3d::main]
+    /// # async fn main() {
+    /// # let mut window = Window::new("Example").await;
+    /// window.set_fog(Fog::exponential(Color::new(0.6, 0.7, 0.8, 1.0), 0.02));
+    /// # }
+    /// ```
+    pub fn set_fog(&mut self, fog: crate::light::Fog) {
+        self.fog = fog;
+    }
+
+    /// Returns the current distance fog settings.
+    pub fn fog(&self) -> crate::light::Fog {
+        self.fog
+    }
+
+    /// Mutable access to the distance fog settings.
+    pub fn fog_mut(&mut self) -> &mut crate::light::Fog {
+        &mut self.fog
+    }
+
+    /// Sets the rasterizer skybox from an equirectangular image file.
+    ///
+    /// Accepts HDR (`.hdr`), EXR, or any format the `image` crate decodes. The
+    /// image is drawn as the scene background and uses the same direction→UV
+    /// mapping as the path tracer's HDRI, so the two backends show the same sky.
+    /// Returns `false` if the file cannot be decoded.
+    ///
+    /// # Example
+    /// ```no_run
+    /// # use kiss3d::prelude::*;
+    /// # use std::path::Path;
+    /// # #[kiss3d::main]
+    /// # async fn main() {
+    /// # let mut window = Window::new("Example").await;
+    /// window.set_skybox_from_file(Path::new("assets/sky.hdr"));
+    /// # }
+    /// ```
+    pub fn set_skybox_from_file(&mut self, path: &Path) -> bool {
+        self.skybox.set_from_file(path)
+    }
+
+    /// Sets the rasterizer skybox from an encoded equirectangular image held in
+    /// memory (e.g. `include_bytes!`-embedded for wasm). Returns `false` if the
+    /// bytes can't be decoded.
+    pub fn set_skybox_from_memory(&mut self, bytes: &[u8]) -> bool {
+        match image::load_from_memory(bytes) {
+            Ok(img) => {
+                self.skybox.set_image(&img);
+                true
+            }
+            Err(_) => false,
+        }
+    }
+
+    /// Sets the rasterizer skybox from an already-decoded equirectangular image.
+    pub fn set_skybox_image(&mut self, image: &image::DynamicImage) {
+        self.skybox.set_image(image);
+    }
+
+    /// Sets the skybox Y-axis rotation (radians) and luminance multiplier.
+    pub fn set_skybox_orientation(&mut self, rotation_radians: f32, intensity: f32) {
+        self.skybox.set_orientation(rotation_radians, intensity);
+    }
+
+    /// Removes the skybox, so subsequent frames render the plain background color.
+    pub fn clear_skybox(&mut self) {
+        self.skybox.clear();
+    }
+
+    /// Whether a skybox environment is currently set.
+    pub fn has_skybox(&self) -> bool {
+        self.skybox.is_set()
+    }
+
+    /// Enables or disables screen-space ambient occlusion (SSAO).
+    ///
+    /// When enabled, a depth/view-position prepass plus a hemisphere-sampling
+    /// pass darken the ambient lighting in creases and contact areas. Adds a
+    /// geometry prepass per frame. Disabled by default.
+    pub fn set_ssao_enabled(&mut self, enabled: bool) {
+        self.ssao_enabled = enabled;
+    }
+
+    /// Whether SSAO is enabled.
+    pub fn ssao_enabled(&self) -> bool {
+        self.ssao_enabled
+    }
+
+    /// Mutable access to the SSAO settings (radius, bias, intensity, power),
+    /// creating the SSAO state if needed.
+    pub fn ssao_settings_mut(&mut self) -> &mut crate::renderer::SsaoSettings {
+        let (w, h) = self.canvas.size();
+        self.ssao
+            .get_or_insert_with(|| crate::renderer::Ssao::new(w, h))
+            .settings_mut()
+    }
+
+    /// Registers a reflection probe and returns its index (up to
+    /// [`MAX_PROBES`](crate::renderer::MAX_PROBES)), or `None` if full.
+    ///
+    /// A probe is a localized, parallax-corrected environment map: reflective
+    /// surfaces inside its influence box sample it (with box-projected parallax)
+    /// instead of the global skybox. Fill its content with
+    /// [`set_reflection_probe_image`](Self::set_reflection_probe_image) (a baked
+    /// HDR) or [`capture_reflection_probe`](Self::capture_reflection_probe) (a live
+    /// scene capture).
+    pub fn add_reflection_probe(
+        &mut self,
+        probe: crate::renderer::ReflectionProbe,
+    ) -> Option<usize> {
+        self.reflection_probes
+            .get_or_insert_with(crate::renderer::ReflectionProbes::new)
+            .add(probe)
+    }
+
+    /// Fills reflection probe `idx` from a baked equirectangular HDR image.
+    pub fn set_reflection_probe_image(&mut self, idx: usize, img: &image::DynamicImage) {
+        if let Some(probes) = self.reflection_probes.as_mut() {
+            probes.set_image(idx, img);
+        }
+    }
+
+    /// Mutable access to a registered probe's placement (to move/resize it; call
+    /// before re-capturing).
+    pub fn reflection_probe_mut(
+        &mut self,
+        idx: usize,
+    ) -> Option<&mut crate::renderer::ReflectionProbe> {
+        self.reflection_probes
+            .as_mut()
+            .and_then(|p| p.probe_mut(idx))
+    }
+
+    /// Sets the render-layer mask used when capturing reflection probes (default:
+    /// all layers). A reflection probe captures from a single point, so nearby
+    /// dynamic objects come out distorted/magnified; put such objects on a layer
+    /// excluded here (and let SSR reflect them instead) so the probe captures only
+    /// the static surroundings. An object is captured when its own render-layer
+    /// mask shares a bit with `mask`.
+    pub fn set_reflection_capture_layers(&mut self, mask: u32) {
+        self.reflection_capture_layers = mask;
+    }
+
+    /// Queues a runtime scene capture of reflection probe `idx`: next frame the
+    /// scene is rendered into the probe's six cube faces (from its center) and
+    /// reprojected into its environment map, so it reflects live geometry. The
+    /// captured frame omits the probe being captured (it is not yet populated) and
+    /// uses the fixed-light path; re-call after the scene changes to refresh it.
+    pub fn capture_reflection_probe(&mut self, idx: usize) {
+        if self
+            .reflection_probes
+            .as_ref()
+            .is_some_and(|p| idx < p.len())
+            && !self.pending_probe_captures.contains(&idx)
+        {
+            self.pending_probe_captures.push(idx);
+        }
+    }
+
+    /// Enables or disables screen-space reflections (SSR).
+    ///
+    /// When enabled (and supported by the backend — native/WebGPU; not WebGL2), a
+    /// geometry G-buffer prepass plus a screen-space ray-march add sharp on-screen
+    /// reflections to glossy/metallic surfaces, falling back to reflection probes
+    /// and the skybox where the screen has no data. Disabled by default.
+    pub fn set_ssr_enabled(&mut self, enabled: bool) {
+        self.ssr_enabled = enabled;
+    }
+
+    /// Whether SSR is enabled (may still be inactive if the backend lacks support).
+    pub fn ssr_enabled(&self) -> bool {
+        self.ssr_enabled
+    }
+
+    /// Mutable access to the SSR settings, creating the SSR state if needed.
+    pub fn ssr_settings_mut(&mut self) -> &mut crate::renderer::SsrSettings {
+        let (w, h) = self.canvas.size();
+        self.ssr
+            .get_or_insert_with(|| crate::renderer::Ssr::new(w, h))
+            .settings_mut()
+    }
+
+    /// Enables or disables depth of field (DoF).
+    ///
+    /// When enabled, the geometry G-buffer prepass (shared with SSAO/SSR) feeds a
+    /// thin-lens blur that keeps surfaces near the focal plane sharp and blurs the
+    /// rest, with the amount controlled by [`DofSettings`](crate::renderer::DofSettings)
+    /// (focal distance, aperture, etc). Runs after SSR and before tonemapping.
+    /// Disabled by default.
+    pub fn set_dof_enabled(&mut self, enabled: bool) {
+        self.dof_enabled = enabled;
+    }
+
+    /// Whether depth of field is enabled.
+    pub fn dof_enabled(&self) -> bool {
+        self.dof_enabled
+    }
+
+    /// Enables or disables refractive transmission (glass).
+    ///
+    /// When enabled (the default), objects with a non-zero
+    /// [`set_transmission`](crate::scene::Object3d::set_transmission) refract the
+    /// rendered scene behind them: after the opaque pass is resolved, its color is
+    /// snapshotted (with a blurred mip chain for frosted glass) and the glass
+    /// objects are drawn sampling it, bent by their IOR/thickness and tinted by the
+    /// volume attenuation. Disable it to skip the extra passes (glass then renders
+    /// as a plain opaque PBR surface). Has no effect on the path tracer.
+    pub fn set_transmission_enabled(&mut self, enabled: bool) {
+        self.transmission_enabled = enabled;
+    }
+
+    /// Whether refractive transmission (glass) is enabled.
+    pub fn transmission_enabled(&self) -> bool {
+        self.transmission_enabled
+    }
+
+    /// Mutable access to the refractive-transmission settings (e.g. the roughness
+    /// blur quality), creating the transmission state if needed.
+    pub fn transmission_settings_mut(&mut self) -> &mut crate::renderer::TransmissionSettings {
+        let (w, h) = self.canvas.size();
+        self.transmission
+            .get_or_insert_with(|| crate::renderer::Transmission::new(w, h))
+            .settings_mut()
+    }
+
+    /// Mutable access to the depth-of-field settings, creating the DoF state if
+    /// needed.
+    pub fn dof_settings_mut(&mut self) -> &mut crate::renderer::DofSettings {
+        let (w, h) = self.canvas.size();
+        self.dof
+            .get_or_insert_with(|| crate::renderer::Dof::new(w, h))
+            .settings_mut()
+    }
+
+    /// Enables or disables real-time shadow mapping for the rasterizer.
+    ///
+    /// Shadows are enabled by default. When disabled, no shadow pre-pass runs and
+    /// every light illuminates surfaces as if unobstructed. This has no effect on
+    /// the path tracer, which always computes ray-traced shadows.
+    pub fn set_shadows_enabled(&mut self, enabled: bool) {
+        self.shadow_mapper.set_enabled(enabled);
+    }
+
+    /// Returns whether real-time shadow mapping is enabled for the rasterizer.
+    pub fn shadows_enabled(&self) -> bool {
+        self.shadow_mapper.is_enabled()
+    }
+
+    /// Sets the per-layer resolution of the shadow atlas (square), reallocating it.
+    ///
+    /// Higher values yield crisper shadows at the cost of memory and fill rate.
+    /// The default is 1024.
+    pub fn set_shadow_resolution(&mut self, resolution: u32) {
+        self.shadow_mapper.set_resolution(resolution);
+    }
+
+    /// Returns the current per-layer shadow atlas resolution.
+    pub fn shadow_resolution(&self) -> u32 {
+        self.shadow_mapper.resolution()
+    }
+
+    /// Sets the rasterizer shadow-edge softness (PCF blur).
+    ///
+    /// `1.0` (the default) is the standard penumbra; larger values blur the
+    /// shadow edges more, `0.0` gives hard edges. Has no effect on the path
+    /// tracer, whose shadow softness comes from each light's `radius`.
+    pub fn set_shadow_softness(&mut self, softness: f32) {
+        self.shadow_mapper.set_softness(softness);
+    }
+
+    /// Returns the current rasterizer shadow-edge softness (PCF blur).
+    pub fn shadow_softness(&self) -> f32 {
+        self.shadow_mapper.softness()
+    }
+
+    /// The current HDR finishing settings (exposure, tonemap operator, bloom).
+    ///
+    /// The rasterizer renders into an HDR film and resolves it with these
+    /// settings; see [`HdrSettings`] and [`HdrPipeline`].
+    pub fn hdr_settings(&self) -> &HdrSettings {
+        self.hdr.settings()
+    }
+
+    /// Mutable access to the HDR finishing settings.
+    ///
+    /// ```no_run
+    /// # use kiss3d::window::Window;
+    /// # use kiss3d::post_processing::Tonemap;
+    /// # #[kiss3d::main]
+    /// # async fn main() {
+    /// # let mut window = Window::new("Example").await;
+    /// let s = window.hdr_settings_mut();
+    /// s.exposure = 1.5;
+    /// s.tonemap = Tonemap::Aces;
+    /// s.bloom_enabled = true;
+    /// # }
+    /// ```
+    pub fn hdr_settings_mut(&mut self) -> &mut HdrSettings {
+        self.hdr.settings_mut()
+    }
+
+    /// Sets the exposure multiplier applied before tonemapping (`1.0` is neutral).
+    pub fn set_exposure(&mut self, exposure: f32) {
+        self.hdr.settings_mut().exposure = exposure;
+    }
+
+    /// Sets the exposure from a physically-based [`Exposure`](crate::camera::Exposure).
+    ///
+    /// Applies to both the rasterizer and the path tracer (they share the HDR
+    /// resolve exposure).
+    ///
+    /// # Example
+    /// ```no_run
+    /// # use kiss3d::prelude::*;
+    /// # #[kiss3d::main]
+    /// # async fn main() {
+    /// # let mut window = Window::new("Example").await;
+    /// // f/8, 1/125 s, ISO 100
+    /// window.set_exposure_value(Exposure::from_physical(8.0, 1.0 / 125.0, 100.0));
+    /// # }
+    /// ```
+    pub fn set_exposure_value(&mut self, exposure: crate::camera::Exposure) {
+        self.hdr.settings_mut().exposure = exposure.exposure();
+    }
+
+    /// Selects the tonemapping operator used by the HDR resolve pass.
+    pub fn set_tonemap(&mut self, tonemap: Tonemap) {
+        self.hdr.settings_mut().tonemap = tonemap;
+    }
+
+    /// Enables or disables bloom.
+    pub fn set_bloom_enabled(&mut self, enabled: bool) {
+        self.hdr.settings_mut().bloom_enabled = enabled;
+    }
+
+    /// Sets the bloom brightness threshold and additive intensity.
+    pub fn set_bloom(&mut self, threshold: f32, intensity: f32) {
+        let s = self.hdr.settings_mut();
+        s.bloom_threshold = threshold;
+        s.bloom_intensity = intensity;
+    }
+
+    /// Rebinds the key to close the window.
+    /// Set to None to disable.
+    pub fn rebind_close_key(&mut self, new_close_key: Option<Key>) {
+        self.close_key = new_close_key;
+    }
+
+    /// Rebinds the modifiers to close the window.
+    /// Set to None make it work with any modifiers.
+    pub fn rebind_close_modifiers(&mut self, new_close_modifiers: Option<Modifiers>) {
+        self.close_modifiers = new_close_modifiers;
+    }
+
+    /// Returns the current key to close the window.
+    pub fn close_key(&self) -> Option<Key> {
+        self.close_key
+    }
+
+    /// Returns the current modifiers to close the window.
+    pub fn close_modifiers(&self) -> Option<Modifiers> {
+        self.close_modifiers
+    }
+
     /// Creates a new hidden window.
     ///
     /// The window is created but not displayed. Use [`show()`](Self::show) to make it visible.
     /// The default size is 800x600 pixels.
+    ///
+    /// While hidden, the window renders off-screen instead of to its surface,
+    /// so [`snap`](Self::snap), [`snap_image`](Self::snap_image) and recording
+    /// work without ever displaying anything — this is how kiss3d does
+    /// offscreen rendering.
     ///
     /// # Arguments
     /// * `title` - The window title
@@ -147,6 +817,26 @@ impl Window {
     /// A new `Window` instance
     pub async fn new_hidden(title: &str) -> Window {
         Window::do_new(title, true, DEFAULT_WIDTH, DEFAULT_HEIGHT, None).await
+    }
+
+    /// Creates a new hidden window with custom dimensions.
+    ///
+    /// The window is created but not displayed. Use [`show()`](Self::show) to make it visible.
+    ///
+    /// While hidden, the window renders off-screen instead of to its surface,
+    /// so [`snap`](Self::snap), [`snap_image`](Self::snap_image) and recording
+    /// work without ever displaying anything — this is how kiss3d does
+    /// offscreen rendering.
+    ///
+    /// # Arguments
+    /// * `title` - The window title
+    /// * `width` - The window width in pixels
+    /// * `height` - The window height in pixels
+    ///
+    /// # Returns
+    /// A new `Window` instance
+    pub async fn new_hidden_with_size(title: &str, width: u32, height: u32) -> Window {
+        Window::do_new(title, true, width, height, None).await
     }
 
     /// Creates a new visible window with default settings.
@@ -214,6 +904,19 @@ impl Window {
         Window::do_new(title, false, width, height, Some(setup)).await
     }
 
+    /// Creates a new window with custom attributes.
+    ///
+    /// This allows fine-grained control over window creation.
+    ///
+    /// # Arguments
+    /// * `window_attrs` - The window title
+    ///
+    /// # Returns
+    /// A new `Window` instance
+    pub async fn new_with_window_attributes(window_attrs: WindowAttributes) -> Window {
+        Window::do_new_with_window_attributes(window_attrs, None).await
+    }
+
     // TODO: make this pub?
     async fn do_new(
         title: &str,
@@ -222,8 +925,24 @@ impl Window {
         height: u32,
         setup: Option<CanvasSetup>,
     ) -> Window {
+        let window_attrs = WindowAttributes::default()
+            .with_title(title)
+            .with_inner_size(LogicalSize::new(width as f64, height as f64))
+            .with_visible(!hide);
+        Self::do_new_with_window_attributes(window_attrs, setup).await
+    }
+    async fn do_new_with_window_attributes(
+        window_attrs: WindowAttributes,
+        setup: Option<CanvasSetup>,
+    ) -> Window {
         let (event_send, event_receive) = mpsc::channel();
-        let canvas = Canvas::open(title, hide, width, height, setup, event_send).await;
+        let hide = !window_attrs.visible;
+        let canvas = Canvas::open(window_attrs, setup, event_send).await;
+        let (width, height) = canvas.size();
+        // The HDR resolve pass tonemaps into the LDR swapchain. The rasterizer's
+        // material pipelines are single-sampled, so the HDR film is too (see the
+        // note in `render_single_frame`).
+        let canvas_surface_format = canvas.surface_format();
 
         // Track window count for proper cleanup
         Context::increment_window_count();
@@ -232,10 +951,18 @@ impl Window {
         let framebuffer_manager = crate::resource::FramebufferManager::new();
         let mut usr_window = Window {
             should_close: false,
+            first_frame: true,
+            close_key: Some(Key::Escape),
+            close_modifiers: None,
+            last_timings: None,
+            last_frame_instant: None,
+            gpu_timer: GpuTimer::new(),
             canvas,
             events: std::rc::Rc::new(event_receive),
             unhandled_events: std::rc::Rc::new(std::cell::RefCell::new(Vec::new())),
             ambient_intensity: 0.2,
+            ambient_color: crate::color::WHITE,
+            fog: crate::light::Fog::default(),
             background: BLACK,
             polyline_renderer_2d: crate::renderer::PolylineRenderer2d::new(),
             point_renderer_2d: crate::renderer::PointRenderer2d::new(),
@@ -243,11 +970,32 @@ impl Window {
             polyline_renderer: crate::renderer::PolylineRenderer3d::new(),
             text_renderer: crate::text::TextRenderer::new(),
             #[cfg(feature = "egui")]
-            egui_context: super::egui_integration::EguiContext::new(),
+            egui_context: EguiContext::new(),
+            hdr: HdrPipeline::new(width, height, 1, canvas_surface_format),
+            skybox: crate::renderer::Skybox::new(),
+            ssao: None,
+            ssao_enabled: false,
+            clustered: None,
+            reflection_probes: None,
+            probe_capture: None,
+            pending_probe_captures: Vec::new(),
+            reflection_capture_layers: u32::MAX,
+            ssr: None,
+            ssr_enabled: false,
+            dof: None,
+            dof_enabled: false,
+            transmission: None,
+            transmission_enabled: true,
             post_process_render_target: framebuffer_manager.new_render_target(width, height, true),
+            offscreen_output_target: None,
+            aov_renderer: None,
+            hidden: hide,
+            shadow_mapper: ShadowMapper::new(DEFAULT_SHADOW_RESOLUTION),
             framebuffer_manager,
             #[cfg(feature = "recording")]
             recording: None,
+            #[cfg(feature = "rt_switcher")]
+            raytracer: (None, false),
         };
 
         if hide {
@@ -255,6 +1003,76 @@ impl Window {
         }
 
         usr_window
+    }
+
+    /// Creates a headless window: a render target backed by no actual window,
+    /// for off-screen rendering. Powers [`OffscreenSurface`](crate::window::OffscreenSurface).
+    #[cfg(not(target_arch = "wasm32"))]
+    pub(super) async fn do_new_headless(
+        width: u32,
+        height: u32,
+        setup: Option<CanvasSetup>,
+    ) -> Window {
+        let (event_send, event_receive) = mpsc::channel();
+        let canvas = Canvas::open_headless(width, height, setup, event_send).await;
+        let (width, height) = canvas.size();
+        // A headless surface is never multisampled.
+        let canvas_surface_format = canvas.surface_format();
+
+        Context::increment_window_count();
+        WindowCache::populate();
+
+        let framebuffer_manager = FramebufferManager::new();
+        Window {
+            should_close: false,
+            first_frame: true,
+            close_key: None,
+            close_modifiers: None,
+            last_timings: None,
+            last_frame_instant: None,
+            gpu_timer: GpuTimer::new(),
+            canvas,
+            events: Rc::new(event_receive),
+            unhandled_events: Rc::new(RefCell::new(Vec::new())),
+            ambient_intensity: 0.2,
+            ambient_color: crate::color::WHITE,
+            fog: crate::light::Fog::default(),
+            background: BLACK,
+            polyline_renderer_2d: PolylineRenderer2d::new(),
+            point_renderer_2d: PointRenderer2d::new(),
+            point_renderer: PointRenderer3d::new(),
+            polyline_renderer: PolylineRenderer3d::new(),
+            text_renderer: TextRenderer::new(),
+            #[cfg(feature = "egui")]
+            egui_context: EguiContext::new(),
+            // Offscreen rendering is single-sampled (see `render_single_frame`).
+            hdr: HdrPipeline::new(width, height, 1, canvas_surface_format),
+            skybox: crate::renderer::Skybox::new(),
+            ssao: None,
+            ssao_enabled: false,
+            clustered: None,
+            reflection_probes: None,
+            probe_capture: None,
+            pending_probe_captures: Vec::new(),
+            reflection_capture_layers: u32::MAX,
+            ssr: None,
+            ssr_enabled: false,
+            dof: None,
+            dof_enabled: false,
+            transmission: None,
+            transmission_enabled: true,
+            post_process_render_target: framebuffer_manager.new_render_target(width, height, true),
+            offscreen_output_target: None,
+            aov_renderer: None,
+            // A headless window has no surface; always render off-screen.
+            hidden: true,
+            shadow_mapper: ShadowMapper::new(DEFAULT_SHADOW_RESOLUTION),
+            framebuffer_manager,
+            #[cfg(feature = "recording")]
+            recording: None,
+            #[cfg(feature = "rt_switcher")]
+            raytracer: (None, false),
+        }
     }
 }
 

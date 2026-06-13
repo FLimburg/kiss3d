@@ -106,8 +106,6 @@ extern crate serde;
 pub extern crate egui;
 
 pub use glamx;
-#[cfg(feature = "parry")]
-pub use parry3d;
 
 // Re-export the procedural macro and its runtime dependencies
 pub use kiss3d_macro::main;
@@ -137,6 +135,9 @@ pub mod resource;
 pub mod scene;
 pub mod text;
 pub mod window;
+
+#[cfg(test)]
+mod shader_validity;
 
 pub mod prelude {
     pub use crate::builtin::*;

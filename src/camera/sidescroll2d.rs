@@ -1,6 +1,6 @@
 use crate::camera::Camera2d;
-use crate::event::{Action, MouseButton, WindowEvent};
-use crate::window::CanvasInputState;
+use crate::event::{Action, Modifiers, MouseButton, WindowEvent};
+use crate::window::Canvas;
 use glamx::{Mat3, Vec2, Vec3, Vec3Swizzles};
 use num::Pow;
 
@@ -14,7 +14,9 @@ pub struct PanZoomCamera2d {
 
     /// Increment of the zoom per unit scrolling. The default value is 40.0.
     zoom_step: f32,
+    zoom_modifier: Option<Modifiers>,
     drag_button: Option<MouseButton>,
+    drag_modifier: Option<Modifiers>,
 
     view: Mat3,
     proj: Mat3,
@@ -36,7 +38,9 @@ impl PanZoomCamera2d {
             at: eye,
             zoom,
             zoom_step: 0.9,
+            zoom_modifier: None,
             drag_button: Some(MouseButton::Button2),
+            drag_modifier: None,
             view: Mat3::IDENTITY,
             proj: Mat3::IDENTITY,
             scaled_proj: Mat3::IDENTITY,
@@ -73,6 +77,16 @@ impl PanZoomCamera2d {
         self.update_projviews();
     }
 
+    /// Gets the zoom step of the camera.
+    pub fn zoom_step(&self) -> f32 {
+        self.zoom_step
+    }
+
+    /// Sets the zoom step of the camera.
+    pub fn set_zoom_step(&mut self, new_zoom_step: f32) {
+        self.zoom_step = new_zoom_step;
+    }
+
     /// Move the camera such that it is centered on a specific point.
     pub fn look_at(&mut self, at: Vec2, zoom: f32) {
         self.at = at;
@@ -98,12 +112,32 @@ impl PanZoomCamera2d {
         self.drag_button = new_button;
     }
 
+    /// The modifier used to drag the PanZoomCamera2d camera.
+    pub fn drag_modifier(&self) -> Option<Modifiers> {
+        self.drag_modifier
+    }
+
+    /// Set the modifier used to drag the PanZoomCamera2d camera.
+    pub fn rebind_drag_modifier(&mut self, new_modifier: Option<Modifiers>) {
+        self.drag_modifier = new_modifier;
+    }
+
     /// Move the camera based on drag from right mouse button
     /// `dpos` is assumed to be in window space so the y-axis is flipped
     fn handle_right_button_displacement(&mut self, dpos: Vec2) {
         self.at.x -= dpos.x / self.zoom;
         self.at.y += dpos.y / self.zoom;
         self.update_projviews();
+    }
+
+    /// The modifier used to zoom the PanZoomCamera2d camera.
+    pub fn zoom_modifier(&self) -> Option<Modifiers> {
+        self.zoom_modifier
+    }
+
+    /// Set the modifier used to zoom the PanZoomCamera2d camera.
+    pub fn rebind_zoom_modifier(&mut self, new_modifier: Option<Modifiers>) {
+        self.zoom_modifier = new_modifier;
     }
 
     fn handle_scroll(&mut self, off: f32) {
@@ -137,11 +171,13 @@ impl Camera2d for PanZoomCamera2d {
         let scale = 1.0; // canvas.scale_factor();
 
         match *event {
-            WindowEvent::CursorPos(x, y, _) => {
+            WindowEvent::CursorPos(x, y, modifiers) => {
                 let curr_pos = Vec2::new(x as f32, y as f32);
 
                 if let Some(drag_button) = self.drag_button {
-                    if canvas.get_mouse_button(drag_button) == Action::Press {
+                    if (self.drag_modifier.is_none() || self.drag_modifier == Some(modifiers))
+                        && canvas.get_mouse_button(drag_button) == Action::Press
+                    {
                         let dpos = curr_pos - self.last_cursor_pos;
                         self.handle_right_button_displacement(dpos)
                     }
@@ -149,7 +185,11 @@ impl Camera2d for PanZoomCamera2d {
 
                 self.last_cursor_pos = curr_pos;
             }
-            WindowEvent::Scroll(_, off, _) => self.handle_scroll(off as f32),
+            WindowEvent::Scroll(_, off, modifiers)
+                if (self.zoom_modifier.is_none() || self.zoom_modifier == Some(modifiers)) =>
+            {
+                self.handle_scroll(off as f32)
+            }
             WindowEvent::FramebufferSize(w, h) => {
                 self.proj = Mat3::from_cols(
                     Vec3::new(2.0 * (scale as f32) / (w as f32), 0.0, 0.0),

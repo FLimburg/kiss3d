@@ -12,7 +12,7 @@ EXAMPLES=(
     primitives
     primitives_scale
     primitives2d
-    multi_light
+    clustered_lights
     wireframe
     lines
     lines2d
@@ -22,6 +22,7 @@ EXAMPLES=(
     group
     add_remove
     camera
+    dda_raycast2d
     event
     mouse_events
     custom_mesh
@@ -31,21 +32,45 @@ EXAMPLES=(
     quad
     rectangle
     obj
+    gltf
     texturing
     texturing_mipmaps
-    decomp
     stereo
     post_processing
+    hdr_bloom
+    tonemapping
+    color_grading
+    antialiasing
+    material_pbr
+    fog
+    camera_modes
+    skybox
+    reflections
+    depth_of_field
+    transmission
+    mirror
+    mirror_sphere
+    parallax
+    shadows
+    transparency
+    aov
+    raytracing
+    raytracing_bsdf
+    raytracing_denoise
+    raytracing_offscreen
+    raytracing_transparency
     instancing2d
     instancing3d
     polylines
     polyline_strip
     polylines2d
     screenshot
+    offscreen
     recording
     window
     multi_windows
     ui
+    inspector
 )
 
 echo "Running ${#EXAMPLES[@]} kiss3d examples..."
@@ -54,7 +79,7 @@ echo ""
 
 for example in "${EXAMPLES[@]}"; do
     echo "=== Running: $example ==="
-    cargo run --release --example "$example" --features egui,parry
+    cargo run --release --example "$example" --features egui,rt_switcher
     echo ""
 done
 

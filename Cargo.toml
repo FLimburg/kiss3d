@@ -1,7 +1,7 @@
 [package]
 authors = ["Sébastien Crozet <developer@crozet.re>"]
 name = "kiss3d"
-version = "0.40.0"
+version = "0.44.0"
 
 autoexamples = true
 description = "Keep it simple, stupid, 2D and 3D graphics engine for Rust."
@@ -15,12 +15,13 @@ include = [
   "src/**/*.rs",
   "src/**/*.wgsl",
   "src/text/*.ttf",
+  "src/builtin/tony_mc_mapface.bin",
   "examples/**/*.rs",
   "examples/media",
   "examples/Cargo.toml",
   "Cargo.toml",
-  "LICENSE",
-  "Readme.md",
+  "/LICENSE",
+  "/Readme.md",
 ]
 
 
@@ -29,13 +30,17 @@ name = "kiss3d"
 path = "src/lib.rs"
 
 [features]
-egui = ["dep:egui", "dep:egui-wgpu"]
+# `rfd` powers the inspector's native "Open…" image dialogs (unused on wasm, which
+# falls back to a path text field).
+
+<<<<<<< HEAD
+drm = ["dep:drm"]egui = ["dep:egui", "dep:egui-wgpu", "dep:rfd"]
 recording = ["dep:ffmpeg-the-third"]
-parry = ["dep:parry3d"]
 serde = ["dep:serde", "glamx/serde", "bitflags/serde", "rgb/serde"]
-drm = ["dep:drm"]
 
 [dependencies]
+
+=======
 bitflags = "2"
 bytemuck = { version = "1", features = ["derive"] }
 egui = { version = "0.33", optional = true, default-features = true }
@@ -55,13 +60,48 @@ serde = { version = "1", features = ["derive"], optional = true }
 wgpu = "27"
 winit = "0.30"
 drm = { version = "0.14.1", optional = true }
+# If enabled, switching between the ray-tracer and the rasterizer is possible while kipping
+# only the `.render_3d` call (instead of having to manually switch between `.render_3d` and
+# `.raytrace_3d`. This is mainly for debugging and experiments comparing the rasterizer and
+# the raytracer.
+rt_switcher = []
 
+[dependencies]
+
+>>>>>>> upstream/master
+
+bitflags = "2"
+bytemuck = { version = "1", features = ["derive"] }
+egui = { version = "0.34", optional = true, default-features = true }
+egui-wgpu = { version = "0.34", optional = true }
+gltf = { version = "1.4", features = ["import", "utils", "names"] }
+image = { version = "0.25", default-features = false, features = [
+  "default-formats",
+] }
+log = "0.4"
+rfd = { version = "0.15", optional = true }
+web-time = "1"
+kiss3d-macro = { version = "0.36.0", path = "kiss3d-macro" }
+glamx = { version = "0.3", features = ["bytemuck"] }
+ffmpeg-the-third = { version = "4", optional = true }
+num-traits = "0.2"
+rgb = "0.8"
+rusttype = { version = "0.9", features = ["gpu_cache"] }
+serde = { version = "1", features = ["derive"], optional = true }
+wgpu = "29"
+winit = "0.30"
+wesl = "0.4"
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 pollster = "0.4"
 
 [target.wasm32-unknown-unknown.dependencies]
-oneshot = "0.1"
-getrandom = { version = "0.3", features = ["wasm_js"] }
+oneshot = { version = "0.2.0", features = ["async"] }
+# We depend on getrandom 0.3 only to enable its wasm_js feature.
+# And this is needed only because some dependencies still depend on 0.3.
+getrandom_03 = { package = "getrandom", version = "0.3", features = [
+  "wasm_js",
+] }
+getrandom = { version = "0.4", features = ["wasm_js"] }
 wasm-bindgen = "0.2"
 wasm-bindgen-futures = "0.4.54"
 web-sys = { version = "0.3", features = [
@@ -84,8 +124,9 @@ web-sys = { version = "0.3", features = [
 ] }
 
 [dev-dependencies]
-env_logger = "0.11"
-parry2d = "0.26"
+
+<<<<<<< HEAD
+parry2d = "0.26"env_logger = "0.11"
 rand = "0.9"
 
 [[example]]
@@ -97,6 +138,14 @@ name = "procedural"
 required-features = ["parry"]
 
 [patch.crates-io]
+
+=======
 #glamx   = { path = "../glamx" }
 #parry3d = { path = "../parry/crates/parry3d" }
 #parry2d = { path = "../parry/crates/parry2d" }
+rand = "0.10"
+
+[patch.crates-io]
+
+>>>>>>> upstream/master
+#glamx = { path = "../glamx" }

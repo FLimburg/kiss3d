@@ -93,13 +93,21 @@ impl Waves {
 
         let pipeline_layout = ctxt.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("waves_pipeline_layout"),
-            bind_group_layouts: &[&texture_bind_group_layout, &uniform_bind_group_layout],
-            push_constant_ranges: &[],
+            bind_group_layouts: &[
+                Some(&texture_bind_group_layout),
+                Some(&uniform_bind_group_layout),
+            ],
+            immediate_size: 0,
         });
 
         // Load shader
-        let shader =
-            ctxt.create_shader_module(Some("waves_shader"), include_str!("../builtin/waves.wgsl"));
+        let shader = ctxt.create_shader_module(
+            Some("waves_shader"),
+            &crate::builtin::compile_shader_with_common(
+                "package::waves",
+                include_str!("../builtin/waves.wgsl"),
+            ),
+        );
 
         // Vertex buffer layout
         let vertex_buffer_layout = wgpu::VertexBufferLayout {
@@ -146,7 +154,7 @@ impl Waves {
                 mask: !0,
                 alpha_to_coverage_enabled: false,
             },
-            multiview: None,
+            multiview_mask: None,
             cache: None,
         });
 
@@ -257,6 +265,7 @@ impl PostProcessingEffect for Waves {
                     depth_stencil_attachment: None,
                     timestamp_writes: None,
                     occlusion_query_set: None,
+                    multiview_mask: None,
                 });
 
             render_pass.set_pipeline(&self.pipeline);

@@ -55,14 +55,17 @@ impl Grayscales {
 
         let pipeline_layout = ctxt.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("grayscales_pipeline_layout"),
-            bind_group_layouts: &[&bind_group_layout],
-            push_constant_ranges: &[],
+            bind_group_layouts: &[Some(&bind_group_layout)],
+            immediate_size: 0,
         });
 
         // Load shader
         let shader = ctxt.create_shader_module(
             Some("grayscales_shader"),
-            include_str!("../builtin/grayscales.wgsl"),
+            &crate::builtin::compile_shader_with_common(
+                "package::grayscales",
+                include_str!("../builtin/grayscales.wgsl"),
+            ),
         );
 
         // Vertex buffer layout
@@ -110,7 +113,7 @@ impl Grayscales {
                 mask: !0,
                 alpha_to_coverage_enabled: false,
             },
-            multiview: None,
+            multiview_mask: None,
             cache: None,
         });
 
@@ -190,6 +193,7 @@ impl PostProcessingEffect for Grayscales {
                     depth_stencil_attachment: None,
                     timestamp_writes: None,
                     occlusion_query_set: None,
+                    multiview_mask: None,
                 });
 
             render_pass.set_pipeline(&self.pipeline);

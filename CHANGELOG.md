@@ -1,3 +1,156 @@
+# v0.44.0
+
+## Breaking Changes
+
+- Removed the `hw_raytracer` cargo feature. The hardware ray-query backend is now selected automatically at runtime when the GPU supports it, otherwise the compute backend is used.
+- `Light` gained a public `layers: u32` field (lighting channels). Code that builds a `Light` with a struct literal must set it (defaults to `u32::MAX`); the `Light::point(..)` / `with_layers(..)` builders are unaffected.
+- The `egui` feature now also enables the `rfd` dependency (native file dialogs used by the inspector).
+- New dependencies: `gltf` 1.4 and `wesl` 0.4.
+
+## New Features
+
+### glTF, skinning & animation
+
+- Load glTF/GLB models with `SceneNode3d::add_gltf` / `add_gltf_from_memory` (or `loader::gltf::load` / `load_from_slice`), returning a `GltfModel` (a scene node plus an `AnimationPlayer` holding every clip in the file).
+- GPU vertex skinning (`Skin3d`) and morph targets (`Object3d::set_morph_weights`, up to 64 targets) — both run on the web backend too.
+- Keyframe animation playback: `AnimationPlayer`, `AnimationClip`, `AnimationChannel`, `Interpolation`.
+- Example: `gltf`.
+
+### Materials
+
+- Extended PBR StandardMaterial parameters on `Object3d`/`SceneNode3d`: `set_clearcoat`, `set_anisotropy`, `set_reflectance`, and volumetric `set_attenuation` / `set_thickness`.
+- `AlphaMode` (`Opaque` / `Mask` / `Blend` / `Premultiplied`) via `set_alpha_mode`.
+- Parallax-occlusion and relief mapping from a height map: `set_height_map` / `set_height_map_from_file`, `set_parallax_scale`, `set_parallax_layers`, `set_parallax_method` (`ParallaxMethod`).
+- Examples: `material_pbr`, `parallax`, `fog`, `transmission`.
+
+### Lighting & shadows
+
+- Clustered (forward+) light culling, lifting the previous fixed light cap; enabled automatically when the GPU exposes compute/storage, with a fixed-light fallback otherwise.
+- Lighting channels: per-light `Light::with_layers` / `Light.layers` and per-object `Object3d::set_light_layers`, to confine a light to a subset of objects.
+- Per-object shadow opt-out via `set_casts_shadows(false)`.
+- Configurable soft shadows: `Window::set_shadow_softness`.
+- Colored ambient light (`Window::set_ambient_color`) and distance fog (`Window::set_fog`, `light::Fog` / `FogMode`).
+- Example: `clustered_lights`.
+
+### Reflections & screen-space effects
+
+- Reflection probes (baked image or runtime cube capture), parallax-corrected: `Window::add_reflection_probe`, `capture_reflection_probe`, `set_reflection_probe_image`, `set_reflection_capture_layers`.
+- Screen-space reflections: `Window::set_ssr_enabled` / `ssr_settings_mut`, with per-object `Object3d::set_ssr(SsrMaterial)`.
+- Planar mirror reflectors integrated into the default PBR material: `SceneNode3d::add_reflector`, `Object3d::set_reflector` and `set_reflector_*`.
+- Screen-space ambient occlusion: `Window::set_ssao_enabled` / `ssao_settings_mut`.
+- Screen-space refractive transmission (glass): `Window::set_transmission_enabled` / `transmission_settings_mut`.
+- Examples: `reflections`, `mirror`, `mirror_sphere`.
+
+### Camera, exposure & post-processing
+
+- Orthographic 3D projection: `camera::Projection`, `OrbitCamera3d::set_projection` / `projection`.
+- Physical camera exposure: `camera::Exposure` (`from_physical` / `from_exposure`), applied with `Window::set_exposure_value`.
+- Equirectangular skybox + image-based lighting: `Window::set_skybox_from_file` / `set_skybox_from_memory` / `set_skybox_image` / `set_skybox_orientation` / `clear_skybox`.
+- Color grading and auto-exposure (eye adaptation) on the HDR resolve, via `Window::hdr_settings_mut` (`ColorGrading`, `auto_exposure*` fields).
+- Thin-lens depth of field: `Window::set_dof_enabled` / `dof_settings_mut` (`DofSettings`, `DepthOfFieldMode`).
+- MSAA: `Window::set_samples(NumSamples)`.
+- FXAA and CAS post-processing (`post_processing::Fxaa`, `Cas`) plus a pixel-inspection `Loupe` (`LoupeCorner`).
+- Render layers (per-object and per-camera masks): `Object3d::set_render_layers`, `OrbitCamera3d::set_render_layers`.
+- Runtime vsync toggle: `Window::set_vsync`.
+- Examples: `camera_modes`, `skybox`, `color_grading`, `depth_of_field`, `antialiasing`.
+
+### Tooling & internals
+
+- Built-in egui scene inspector: `window::Inspector` + `Window::draw_inspector` (toggle effects, edit materials/lights/cameras, switch between the rasterizer and path tracer). Example: `inspector`.
+- GPU render timings: `Window::render_timings` (`RenderTimings`).
+- Optional `rt_switcher` feature: drive both backends through `render_3d` for side-by-side rasterizer/ray-tracer comparison.
+- WGSL shaders refactored with WESL conditional compilation behind a pipeline cache, plus a shader-variant validity test.
+
+# v0.43.0
+
+## Breaking Changes
+
+- The rasterizer now renders into a linear HDR film that is tonemapped on resolve, with **Khronos PBR Neutral as the default tonemap operator**. Existing scenes therefore look different (more filmic highlight roll-off, less hard clipping). Call `Window::set_tonemap(Tonemap::None)` to restore the previous look.
+- **Shadows are enabled by default.** Lights now cast shadows (`Light::casts_shadows` defaults to `true`) whenever shadows are globally enabled, and the default shadow atlas is 4096² across 16 layers (~1 GB of GPU memory). Use `Window::set_shadows_enabled(false)` and/or `set_shadow_resolution(2048)` to reduce this.
+- **Custom `Material3d` implementations** must target `Context::render_format()` (the `Rgba16Float` HDR film) instead of the surface format for their color attachment, or they fail with a render-pass-incompatibility validation error. A material is only invoked in the new transparent (order-independent-transparency) pass if it returns `true` from the new `Material3d::renders_in_transparent_phase()` (default `false`), so opaque custom materials need no other change.
+- `RenderContext` gained `phase: RenderPhase` and `shadow_bind_group: Option<wgpu::BindGroup>` fields; `Light` gained `radius: f32` and `casts_shadows: bool` fields. Code that builds or exhaustively destructures these structs with a struct literal must be updated (builder usage such as `Light::point(..).with_intensity(..)` is unaffected).
+
+## New Features
+
+### GPU path tracer
+
+- Added a progressive Monte-Carlo **path tracer** (`RayTracer`) that renders the existing scene graph as an alternative to the rasterizer, via `Window::raytrace_3d` and `OffscreenSurface::render_image_raytraced`.
+  - Two backends sharing one WGSL kernel: a software compute-shader BVH traversal and a hardware ray-query path, selected automatically at runtime (the hardware path is used when the GPU supports it, otherwise it falls back to the compute backend).
+  - Two-level (instanced) BVH so instanced scene nodes are traced once per mesh.
+  - Unified PBR/BSDF surface model (diffuse / metal / glass), per-object materials and textures, area-light next-event estimation with multiple-importance sampling, thin-lens depth of field, and image-based lighting from an equirectangular HDRI.
+  - Alpha (coverage) transparency; ambient acts as a uniform fill light; the window background color is shown on directly-seen ray misses without lighting the scene.
+  - Edge-aware à-trous denoiser with first-hit albedo/normal guides (`RayTracer::set_denoise`).
+  - BSDF setters on `SceneNode3d` (`set_metallic`, `set_roughness`, `set_emissive`, …).
+  - Examples: `raytracing`, `raytracing_bsdf`, `raytracing_denoise`, `raytracing_offscreen`, `raytracing_transparency`.
+
+### HDR rendering pipeline
+
+- The rasterizer now renders into a linear `Rgba16Float` **HDR film** and resolves it with a configurable tonemap operator (`Window::set_tonemap` / `set_exposure`).
+  - Operators: `None`, `Aces`, `Reinhard`, `AgX`, `Neutral` (Khronos PBR Neutral, the default), and `TonyMcMapface` (baked CC0 LUT). The same operator applies to the path tracer's resolve.
+  - Physically-weighted **bloom** on the HDR film (`Window::set_bloom_enabled` and related settings).
+  - Weighted-blended **order-independent transparency** for the rasterizer (correct blending of overlapping transparent surfaces without sorting).
+  - Examples: `hdr_bloom`, `tonemapping`, `transparency`.
+
+### Real-time shadows
+
+- Added real-time **shadow mapping** for directional, spot and point lights, applied in the PBR lighting pass.
+  - Directional lights use **cascaded shadow maps** (the camera frustum is split logarithmically, each cascade fit with a rotation-invariant, texel-snapped projection derived from the camera so shadows don't shimmer or degrade with scene size, and cascades are cross-faded across boundaries) for crisp near shadows with bounded far coverage.
+  - Spot lights use a perspective map; point lights an unrolled cube map.
+  - Castaño 2013 optimized PCF (tent-weighted 9-tap) for smooth, crisp edges.
+  - Configurable: `Window::set_shadows_enabled` / `set_shadow_resolution`, plus cascade count, shadow distance, first-cascade bound and depth bias on the shadow mapper. Per-light `Light::with_casts_shadows`.
+  - Example: `shadows`.
+
+### Auxiliary render outputs (AOVs)
+
+- Added auxiliary render outputs produced by re-rendering the scene with dedicated materials (no path tracer required): linear **depth**, surface **normals**, and per-object **segmentation** ids (with a colorized variant).
+  - `Window::snap_depth` / `snap_normals` / `snap_segmentation` / `snap_segmentation_colored`, a per-object segmentation id on `Object3d`, and an `aov` example.
+
+# v0.42.0
+
+## Breaking Changes
+
+- Bumped `glamx` dependency: 0.2 → 0.3. ([#384](https://github.com/dimforge/kiss3d/pull/384))
+
+## New Features
+
+### Off-screen Rendering ([#382](https://github.com/dimforge/kiss3d/pull/382))
+
+- Added `OffscreenSurface`: a truly headless render target with no window and no event loop — works on CI, servers and other environments without a display server (native only).
+  - `OffscreenSurface::new(width, height)` / `with_setup(width, height, CanvasSetup)`
+  - `render_3d` / `render_2d` / `render` — share the same scene graph, cameras, lights and materials as `Window`
+  - `render_image_3d` — render a frame and capture it in one call
+  - `snap`, `snap_rect`, `snap_image`, `resize`, `size`, `width`, `height`, `set_background_color`
+- Hidden windows (`Window::new_hidden*`) now render into an off-screen texture, so `snap*` and the `recording` feature work on them too. ([#381](https://github.com/dimforge/kiss3d/pull/381))
+- Added the `offscreen` example.
+
+## Bug Fixes
+
+- Fixed the first frame occasionally failing to render. A freshly created window — particularly on macOS — may need the event loop to be pumped a few times before its surface becomes presentable; surface acquisition now retries during a short startup grace period before giving up, then skips transient failures immediately on subsequent frames. ([#381](https://github.com/dimforge/kiss3d/pull/381))
+- Ensured the selected surface format is supported by the device features. ([#379](https://github.com/dimforge/kiss3d/pull/379))
+- Replaced stray `println!` / `eprintln!` calls in the rendering path and the OBJ/MTL loaders with `log` macros. ([#381](https://github.com/dimforge/kiss3d/pull/381))
+
+# v0.41.0
+
+## Breaking Changes
+
+- Removed the `parry` feature flag and `parry3d` dependency to avoid circular dependencies when publishing.
+  `SceneNode3d::trimesh`/`add_trimesh` and `MeshManager3d::add_trimesh` now take `(Vec<Vec3>, Vec<[u32; 3]>, ...)` instead of a `parry3d::shape::TriMesh`. The `From<TriMesh> for RenderMesh` conversion and the `parry3d` re-export are removed.
+- `CanvasSetup` no longer implements `Copy` (now contains a `String` field) and has a new required field `canvas_id: String`. Use `..Default::default()` to fill it in. ([#372](https://github.com/dimforge/kiss3d/pull/372))
+- `FixedView2d::new()` now takes `(CoordinateSystem2d, bool)` parameters instead of no arguments. Use `FixedView2d::default()` for the previous behavior. ([#354](https://github.com/dimforge/kiss3d/pull/354))
+- Removed the `decomp` example (depended on `parry`).
+- Bumped dependencies: `wgpu` 27 → 29, `glamx` 0.1 → 0.2, `egui`/`egui-wgpu` 0.33 → 0.34, `getrandom` 0.3 → 0.4, `oneshot` 0.1 → 0.2, `rand` (dev) 0.9 → 0.10.
+
+## New Features
+
+- `FixedView2d`: added `CoordinateSystem2d` enum with `CenterUp` (default, unchanged) and `TopLeftDown` (top-left origin, Y-down) coordinate systems, and a configurable `apply_hidpi` flag. ([#354](https://github.com/dimforge/kiss3d/pull/354))
+- Added new `dda_raycast2d` example demonstrating 2D ray casting with the top-left coordinate system. ([#354](https://github.com/dimforge/kiss3d/pull/354))
+- `Window::new_with_window_attributes()`: create a window from a `winit::window::WindowAttributes` for fine-grained control. ([#364](https://github.com/dimforge/kiss3d/pull/364))
+- `Window::new_hidden_with_size()`: create a hidden window with custom dimensions. ([#365](https://github.com/dimforge/kiss3d/pull/365))
+- `Window::rebind_close_key()` / `rebind_close_modifiers()`: customize or disable the window-close keybinding (default: Escape). ([#367](https://github.com/dimforge/kiss3d/pull/367))
+- `PanZoomCamera2d`: added `zoom_step()` / `set_zoom_step()` ([#362](https://github.com/dimforge/kiss3d/pull/362)), and `rebind_drag_modifier()` / `rebind_zoom_modifier()` for modifier-gated drag and zoom. ([#360](https://github.com/dimforge/kiss3d/pull/360))
+- `OrbitCamera3d`: added `fov()` / `set_fov()`. ([#361](https://github.com/dimforge/kiss3d/pull/361))
+- Implemented `Default` for `CanvasSetup`. ([#372](https://github.com/dimforge/kiss3d/pull/372))
+
 # v0.40.0
 
 ## Breaking Changes

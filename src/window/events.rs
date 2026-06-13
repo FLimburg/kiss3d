@@ -8,6 +8,9 @@ use crate::event::EventManager;
 
 use super::Window;
 
+#[cfg(feature = "rt_switcher")]
+use crate::prelude::{RayTracer, RayTracerPreset};
+
 impl Window {
     /// Returns an event manager for accessing window events.
     ///
@@ -81,11 +84,38 @@ impl Window {
         camera_2d: &mut dyn Camera2d,
         event: &WindowEvent,
     ) {
-        match *event {
-            WindowEvent::Key(Key::Escape, Action::Release, _) | WindowEvent::Close => {
-                self.close();
+        if let Some(binding_key) = self.close_key {
+            if let WindowEvent::Key(key, Action::Release, modifiers) = event {
+                if binding_key == *key
+                    && (Some(*modifiers) == self.close_modifiers || self.close_modifiers.is_none())
+                {
+                    self.close()
+                }
+            }
+        }
+
+        #[cfg(feature = "rt_switcher")]
+        match event {
+            WindowEvent::Key(Key::F4, Action::Release, _) => {
+                self.raytracer.1 = false;
+            }
+            WindowEvent::Key(Key::F5, Action::Release, _) => {
+                self.raytracer.0 = Some(RayTracer::preset(RayTracerPreset::Low));
+            }
+            WindowEvent::Key(Key::F6, Action::Release, _) => {
+                self.raytracer.0 = Some(RayTracer::preset(RayTracerPreset::Medium));
+            }
+            WindowEvent::Key(Key::F7, Action::Release, _) => {
+                self.raytracer.0 = Some(RayTracer::preset(RayTracerPreset::High));
+            }
+            WindowEvent::Key(Key::F8, Action::Release, _) => {
+                self.raytracer.0 = Some(RayTracer::preset(RayTracerPreset::Ultra));
             }
             _ => {}
+        }
+
+        if *event == WindowEvent::Close {
+            self.close();
         }
 
         // Feed events to egui and check if it wants to capture input

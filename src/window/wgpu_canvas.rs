@@ -6,11 +6,10 @@ use std::sync::Arc;
 
 use crate::context::Context;
 use crate::event::{Action, Key, Modifiers, MouseButton, TouchAction, WindowEvent};
-use crate::window::canvas::{CanvasSetup, NumSamples};
+use crate::window::canvas::CanvasSetup;
 use image::{GenericImage, Pixel};
 #[cfg(not(target_arch = "wasm32"))]
 use winit::application::ApplicationHandler;
-use winit::dpi::LogicalSize;
 #[cfg(not(target_arch = "wasm32"))]
 use winit::event::{MouseScrollDelta, TouchPhase, WindowEvent as WinitWindowEvent};
 #[cfg(not(target_arch = "wasm32"))]
@@ -29,6 +28,47 @@ use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use wgpu::ExperimentalFeatures;
 
+/// Computes the device features to request.
+///
+/// Opts into wgpu's experimental ray query + acceleration-structure features
+/// whenever the adapter supports them, so the path tracer can use the hardware
+/// backend; on platforms without support the feature is simply not requested and
+/// the portable compute backend is used as a fallback.
+fn raytracing_features(adapter: &wgpu::Adapter) -> wgpu::Features {
+    let mut features = wgpu::Features::empty();
+    let supported = adapter.features();
+
+    // Per-pass GPU timestamp queries power the inspector's render timings. Only
+    // requested when the adapter supports it; otherwise GPU timing is disabled
+    // (and only the CPU submit/present/total timings are reported).
+    if supported.contains(wgpu::Features::TIMESTAMP_QUERY) {
+        features |= wgpu::Features::TIMESTAMP_QUERY;
+    }
+
+    // Hardware ray queries for the path tracer, when the platform supports them.
+    if supported.contains(wgpu::Features::EXPERIMENTAL_RAY_QUERY) {
+        features |= wgpu::Features::EXPERIMENTAL_RAY_QUERY;
+    }
+
+    features
+}
+
+/// The experimental-features token to pass to `request_device`.
+///
+/// `EXPERIMENTAL_RAY_QUERY` is gated behind wgpu's separate "I accept experimental
+/// APIs" token in addition to being listed in `required_features`; requesting the
+/// feature without enabling the token makes `request_device` fail. Returns the
+/// enabled token only when ray query is actually being requested.
+fn experimental_features(required: wgpu::Features) -> ExperimentalFeatures {
+    if required.contains(wgpu::Features::EXPERIMENTAL_RAY_QUERY) {
+        // SAFETY: we opt into wgpu's experimental hardware ray-query API. It may
+        // still contain bugs; the path tracer's hardware backend accepts that to
+        // use GPU-accelerated ray tracing where available.
+        return unsafe { ExperimentalFeatures::enabled() };
+    }
+    ExperimentalFeatures::disabled()
+}
+
 // Thread-local EventLoop singleton for native platforms.
 // winit only allows one EventLoop per program, so we store it in thread-local
 // storage and reuse it across window recreations. EventLoop is not Send/Sync,
@@ -43,7 +83,7 @@ thread_local! {
 
 /// Internal event type that stores both the event data and state updates needed.
 #[cfg(not(target_arch = "wasm32"))]
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq)]
 enum PendingEvent {
     WindowEvent(WindowEvent),
     ButtonState(MouseButton, Action),
@@ -60,10 +100,10 @@ enum PendingEvent {
 /// A unified canvas based on wgpu that works on both native and web platforms.
 #[allow(dead_code)]
 pub struct WgpuCanvas {
-    window: Arc<Window>,
+    window: Option<Arc<Window>>,
     #[cfg(not(target_arch = "wasm32"))]
-    window_id: winit::window::WindowId,
-    surface: wgpu::Surface<'static>,
+    window_id: Option<winit::window::WindowId>,
+    surface: Option<wgpu::Surface<'static>>,
     surface_config: wgpu::SurfaceConfiguration,
     cursor_pos: Option<(f64, f64)>,
     pub(super) key_states: [Action; Key::Unknown as usize + 1],
@@ -90,22 +130,11 @@ pub struct WgpuCanvas {
 impl WgpuCanvas {
     /// Opens a new window and initializes the wgpu context.
     pub async fn open(
-        title: &str,
-        hide: bool,
-        width: u32,
-        height: u32,
+        window_attrs: WindowAttributes,
         canvas_setup: Option<CanvasSetup>,
         out_events: Sender<WindowEvent>,
     ) -> Self {
-        let window_attrs = WindowAttributes::default()
-            .with_title(title)
-            .with_inner_size(LogicalSize::new(width as f64, height as f64))
-            .with_visible(!hide);
-
-        let canvas_setup = canvas_setup.unwrap_or(CanvasSetup {
-            vsync: true,
-            samples: NumSamples::Zero,
-        });
+        let canvas_setup = canvas_setup.unwrap_or_default();
 
         // Create the window
         #[cfg(not(target_arch = "wasm32"))]
@@ -135,9 +164,9 @@ impl WgpuCanvas {
             let web_window = web_sys::window().expect("Failed to get web_sys window");
             let document = web_window.document().expect("Failed to get document");
 
-            // Try to find an existing canvas with id "canvas", or create one
+            // Try to find an existing canvas with the configured id, or create one
             let canvas = document
-                .get_element_by_id("canvas")
+                .get_element_by_id(&canvas_setup.canvas_id)
                 .and_then(|elem| elem.dyn_into::<web_sys::HtmlCanvasElement>().ok())
                 .unwrap_or_else(|| {
                     // Create a new canvas element
@@ -146,7 +175,7 @@ impl WgpuCanvas {
                         .expect("Failed to create canvas element")
                         .dyn_into::<web_sys::HtmlCanvasElement>()
                         .expect("Failed to cast to HtmlCanvasElement");
-                    canvas.set_id("canvas");
+                    canvas.set_id(&canvas_setup.canvas_id);
 
                     // Append to body
                     if let Some(body) = document.body() {
@@ -209,19 +238,20 @@ impl WgpuCanvas {
 
             // Configure surface with existing device
             let surface_caps = surface.get_capabilities(&ctxt.adapter);
+            let enabled_features = ctxt.device.features();
             let surface_format = surface_caps
                 .formats
                 .iter()
-                .find(|f| !f.is_srgb())
+                .find(|f| !f.is_srgb() && enabled_features.contains(f.required_features()))
                 .copied()
                 .unwrap_or(surface_caps.formats[0]);
 
             (surface, surface_format)
         } else {
             // First window - create the full wgpu context
-            let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
+            let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
                 backends: wgpu::Backends::all(),
-                ..Default::default()
+                ..wgpu::InstanceDescriptor::new_without_display_handle()
             });
 
             // Create surface
@@ -239,21 +269,26 @@ impl WgpuCanvas {
                 .await
                 .expect("Failed to find an appropriate adapter");
 
-            // Request device (async on all platforms)
-            // Use downlevel defaults for WebGL2 compatibility
-            #[cfg(target_arch = "wasm32")]
-            let limits = wgpu::Limits::downlevel_webgl2_defaults();
-            #[cfg(not(target_arch = "wasm32"))]
-            let limits = wgpu::Limits::default();
+            // Request the adapter's full limits on every platform. The path tracer,
+            // the shadow-mapped material, and the storage-backed point/wireframe
+            // renderers need more bind groups and per-stage storage buffers (and, for
+            // the path tracer, compute) than wgpu's conservative cross-platform
+            // defaults allow. On native and on WebGPU browsers `adapter.limits()`
+            // grants these. On a WebGL2-only browser the adapter reports the (much
+            // lower) WebGL2 caps, so requesting them is still valid and the basic
+            // rasterizer keeps working — only the storage/compute shaders are
+            // unavailable there, which is an inherent WebGL2 limitation.
+            let limits = adapter.limits();
 
+            let required_features = raytracing_features(&adapter);
             let (device, queue) = adapter
                 .request_device(&wgpu::DeviceDescriptor {
                     label: Some("kiss3d device"),
-                    required_features: wgpu::Features::empty(),
+                    required_features,
                     required_limits: limits,
                     memory_hints: wgpu::MemoryHints::default(),
                     trace: wgpu::Trace::Off,
-                    experimental_features: ExperimentalFeatures::default(),
+                    experimental_features: experimental_features(required_features),
                 })
                 .await
                 .expect("Failed to create device");
@@ -263,10 +298,11 @@ impl WgpuCanvas {
             // WebGL2 often doesn't support sRGB framebuffers, so we do manual gamma correction
             // in shaders instead. This ensures colors look the same on native and web.
             let surface_caps = surface.get_capabilities(&adapter);
+            let enabled_features = device.features();
             let surface_format = surface_caps
                 .formats
                 .iter()
-                .find(|f| !f.is_srgb())
+                .find(|f| !f.is_srgb() && enabled_features.contains(f.required_features()))
                 .copied()
                 .unwrap_or(surface_caps.formats[0]);
 
@@ -596,10 +632,10 @@ impl WgpuCanvas {
         let window_id = window.id();
 
         WgpuCanvas {
-            window,
+            window: Some(window),
             #[cfg(not(target_arch = "wasm32"))]
-            window_id,
-            surface,
+            window_id: Some(window_id),
+            surface: Some(surface),
             surface_config,
             cursor_pos: None,
             key_states: [Action::Release; Key::Unknown as usize + 1],
@@ -616,6 +652,217 @@ impl WgpuCanvas {
             pending_events,
             #[cfg(target_arch = "wasm32")]
             _event_closures,
+        }
+    }
+
+    /// Opens a headless canvas: a wgpu context with no window and no surface,
+    /// for off-screen rendering. Works without a display server.
+    #[cfg(not(target_arch = "wasm32"))]
+    pub async fn open_headless(
+        width: u32,
+        height: u32,
+        canvas_setup: Option<CanvasSetup>,
+        out_events: Sender<WindowEvent>,
+    ) -> Self {
+        let canvas_setup = canvas_setup.unwrap_or_default();
+        let width = width.max(1);
+        let height = height.max(1);
+
+        // Reuse the wgpu context if one already exists (e.g. a window was
+        // created first); otherwise create a surface-less one.
+        let surface_format = if Context::is_initialized() {
+            Context::get().surface_format
+        } else {
+            let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
+                backends: wgpu::Backends::all(),
+                ..wgpu::InstanceDescriptor::new_without_display_handle()
+            });
+
+            let adapter = instance
+                .request_adapter(&wgpu::RequestAdapterOptions {
+                    power_preference: wgpu::PowerPreference::default(),
+                    compatible_surface: None,
+                    force_fallback_adapter: false,
+                })
+                .await
+                .expect("Failed to find an appropriate adapter");
+
+            let required_features = raytracing_features(&adapter);
+            let (device, queue) = adapter
+                .request_device(&wgpu::DeviceDescriptor {
+                    label: Some("kiss3d headless device"),
+                    required_features,
+                    // See the windowed path: request the adapter's full limits so
+                    // the path tracer and shadow-mapped material have enough bind
+                    // groups and per-stage storage buffers.
+                    required_limits: adapter.limits(),
+                    memory_hints: wgpu::MemoryHints::default(),
+                    trace: wgpu::Trace::Off,
+                    experimental_features: experimental_features(required_features),
+                })
+                .await
+                .expect("Failed to create device");
+
+            // No surface to query for a preferred format; pick a widely
+            // supported non-sRGB format (gamma is handled in shaders).
+            let surface_format = wgpu::TextureFormat::Rgba8Unorm;
+            Context::init(instance, device, queue, adapter, surface_format);
+            surface_format
+        };
+
+        let ctxt = Context::get();
+        let sample_count = canvas_setup.samples as u32;
+
+        // Kept only to carry the size and format; no surface is configured.
+        let surface_config = wgpu::SurfaceConfiguration {
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_SRC,
+            format: surface_format,
+            width,
+            height,
+            present_mode: wgpu::PresentMode::AutoNoVsync,
+            alpha_mode: wgpu::CompositeAlphaMode::Auto,
+            view_formats: vec![],
+            desired_maximum_frame_latency: 2,
+        };
+
+        let (depth_texture, depth_view) =
+            Self::create_depth_texture(&ctxt.device, width, height, sample_count);
+        let (msaa_texture, msaa_view) = if sample_count > 1 {
+            let (tex, view) = Self::create_msaa_texture(
+                &ctxt.device,
+                width,
+                height,
+                surface_format,
+                sample_count,
+            );
+            (Some(tex), Some(view))
+        } else {
+            (None, None)
+        };
+        let readback_texture =
+            Self::create_readback_texture(&ctxt.device, width, height, surface_format);
+
+        WgpuCanvas {
+            window: None,
+            window_id: None,
+            surface: None,
+            surface_config,
+            cursor_pos: None,
+            key_states: [Action::Release; Key::Unknown as usize + 1],
+            button_states: [Action::Release; MouseButton::Button8 as usize + 1],
+            out_events,
+            modifiers_state: ModifiersState::default(),
+            depth_texture,
+            depth_view,
+            msaa_texture,
+            msaa_view,
+            sample_count,
+            readback_texture,
+        }
+    }
+
+    /// Resizes the canvas render targets.
+    ///
+    /// For an off-screen (headless) canvas this is the only way to change the
+    /// render size, since there is no window to emit resize events.
+    /// Whether vsync (the `AutoVsync` present mode) is currently enabled.
+    pub fn vsync(&self) -> bool {
+        self.surface_config.present_mode == wgpu::PresentMode::AutoVsync
+    }
+
+    /// Enables/disables vsync at runtime by switching the surface present mode
+    /// (`AutoVsync` ↔ `AutoNoVsync`) and reconfiguring the surface. With vsync off,
+    /// frames present as fast as the GPU produces them (uncapped), which is what you
+    /// want when measuring GPU-bound throughput; on, presentation is paced to the
+    /// display refresh. No-op on a headless/offscreen canvas (no surface).
+    pub fn set_vsync(&mut self, enabled: bool) {
+        let present_mode = if enabled {
+            wgpu::PresentMode::AutoVsync
+        } else {
+            wgpu::PresentMode::AutoNoVsync
+        };
+        if self.surface_config.present_mode == present_mode {
+            return;
+        }
+        self.surface_config.present_mode = present_mode;
+        if let Some(surface) = &self.surface {
+            let ctxt = Context::get();
+            surface.configure(&ctxt.device, &self.surface_config);
+        }
+    }
+
+    pub fn resize(&mut self, width: u32, height: u32) {
+        let width = width.max(1);
+        let height = height.max(1);
+        if self.surface_config.width == width && self.surface_config.height == height {
+            return;
+        }
+
+        let ctxt = Context::get();
+        self.surface_config.width = width;
+        self.surface_config.height = height;
+        if let Some(surface) = &self.surface {
+            surface.configure(&ctxt.device, &self.surface_config);
+        }
+
+        let (depth_texture, depth_view) =
+            Self::create_depth_texture(&ctxt.device, width, height, self.sample_count);
+        self.depth_texture = depth_texture;
+        self.depth_view = depth_view;
+
+        if self.sample_count > 1 {
+            let (msaa_texture, msaa_view) = Self::create_msaa_texture(
+                &ctxt.device,
+                width,
+                height,
+                self.surface_config.format,
+                self.sample_count,
+            );
+            self.msaa_texture = Some(msaa_texture);
+            self.msaa_view = Some(msaa_view);
+        }
+
+        self.readback_texture =
+            Self::create_readback_texture(&ctxt.device, width, height, self.surface_config.format);
+    }
+
+    /// Changes the MSAA sample count, recreating the size-dependent attachments
+    /// (depth + MSAA color) to match.
+    ///
+    /// The swapchain is single-sample regardless, so it is left untouched. The HDR
+    /// film, OIT targets and the rasterization pipelines re-derive the new count on
+    /// the next frame (the pipelines are cached per sample count), so no other state
+    /// needs to be rebuilt here.
+    pub fn set_sample_count(&mut self, sample_count: u32) {
+        let sample_count = sample_count.max(1);
+        if self.sample_count == sample_count {
+            return;
+        }
+        self.sample_count = sample_count;
+
+        let ctxt = Context::get();
+        let width = self.surface_config.width.max(1);
+        let height = self.surface_config.height.max(1);
+
+        let (depth_texture, depth_view) =
+            Self::create_depth_texture(&ctxt.device, width, height, sample_count);
+        self.depth_texture = depth_texture;
+        self.depth_view = depth_view;
+
+        if sample_count > 1 {
+            let (msaa_texture, msaa_view) = Self::create_msaa_texture(
+                &ctxt.device,
+                width,
+                height,
+                self.surface_config.format,
+                sample_count,
+            );
+            self.msaa_texture = Some(msaa_texture);
+            self.msaa_view = Some(msaa_view);
+        } else {
+            // Drop the (now unused) multisampled color attachment.
+            self.msaa_texture = None;
+            self.msaa_view = None;
         }
     }
 
@@ -702,6 +949,11 @@ impl WgpuCanvas {
 
     /// Polls events from the window system.
     pub fn poll_events(&mut self) {
+        // A headless canvas has no window and no event loop; nothing to poll.
+        if self.window.is_none() {
+            return;
+        }
+
         #[cfg(not(target_arch = "wasm32"))]
         {
             use winit::platform::pump_events::EventLoopExtPumpEvents;
@@ -791,20 +1043,12 @@ impl WgpuCanvas {
                         WinitWindowEvent::KeyboardInput { event, .. } => {
                             let action = translate_action(event.state);
                             let key = translate_key(event.physical_key);
-                            let mut events = vec![
-                                PendingEvent::KeyState(key, action),
-                                PendingEvent::WindowEvent(WindowEvent::Key(
-                                    key,
-                                    action,
-                                    Modifiers::empty(),
-                                )),
-                            ];
-                            if let winit::keyboard::Key::Character(ref c) = event.logical_key {
-                                for ch in c.chars() {
-                                    events.push(PendingEvent::WindowEvent(WindowEvent::Char(ch)));
-                                }
-                            }
-                            events
+                            translate_keyboard_input(
+                                key,
+                                action,
+                                &event.logical_key,
+                                event.text.as_deref(),
+                            )
                         }
                         WinitWindowEvent::ModifiersChanged(new_modifiers) => {
                             vec![PendingEvent::Modifiers(new_modifiers.state())]
@@ -836,7 +1080,7 @@ impl WgpuCanvas {
             let events = PENDING_WINDOW_EVENTS.with(|storage| {
                 storage
                     .borrow_mut()
-                    .remove(&self.window_id)
+                    .remove(&self.window_id.unwrap())
                     .unwrap_or_default()
             });
 
@@ -863,7 +1107,9 @@ impl WgpuCanvas {
                         // Resize surface
                         self.surface_config.width = width;
                         self.surface_config.height = height;
-                        self.surface.configure(&ctxt.device, &self.surface_config);
+                        if let Some(surface) = &self.surface {
+                            surface.configure(&ctxt.device, &self.surface_config);
+                        }
 
                         // Recreate depth texture
                         let (new_depth, new_depth_view) = Self::create_depth_texture(
@@ -903,7 +1149,7 @@ impl WgpuCanvas {
         #[cfg(target_arch = "wasm32")]
         {
             // Check for resize - compare current window size to surface config
-            let current_size = self.window.inner_size();
+            let current_size = self.window.as_ref().unwrap().inner_size();
             if current_size.width > 0
                 && current_size.height > 0
                 && (current_size.width != self.surface_config.width
@@ -914,7 +1160,9 @@ impl WgpuCanvas {
                 // Resize surface
                 self.surface_config.width = current_size.width;
                 self.surface_config.height = current_size.height;
-                self.surface.configure(&ctxt.device, &self.surface_config);
+                if let Some(surface) = &self.surface {
+                    surface.configure(&ctxt.device, &self.surface_config);
+                }
 
                 // Recreate depth texture
                 let (new_depth, new_depth_view) = Self::create_depth_texture(
@@ -974,18 +1222,45 @@ impl WgpuCanvas {
     }
 
     /// Gets the current surface texture for rendering.
-    pub fn get_current_texture(&self) -> Result<wgpu::SurfaceTexture, wgpu::SurfaceError> {
-        self.surface.get_current_texture()
+    pub fn get_current_texture(&self) -> Option<wgpu::SurfaceTexture> {
+        let surface = self.surface.as_ref()?;
+        match surface.get_current_texture() {
+            wgpu::CurrentSurfaceTexture::Success(texture)
+            | wgpu::CurrentSurfaceTexture::Suboptimal(texture) => Some(texture),
+            wgpu::CurrentSurfaceTexture::Outdated | wgpu::CurrentSurfaceTexture::Lost => {
+                // Reconfigure and retry once
+                let ctxt = Context::get();
+                surface.configure(&ctxt.device, &self.surface_config);
+                match surface.get_current_texture() {
+                    wgpu::CurrentSurfaceTexture::Success(texture)
+                    | wgpu::CurrentSurfaceTexture::Suboptimal(texture) => Some(texture),
+                    _ => None,
+                }
+            }
+            _ => None,
+        }
     }
 
-    /// Copies the frame texture to the readback texture for later reading.
+    /// Copies the surface frame texture into the readback texture for later
+    /// reading via [`read_pixels`](Self::read_pixels).
     pub fn copy_frame_to_readback(&self, frame: &wgpu::SurfaceTexture) {
+        self.copy_texture_to_readback(&frame.texture);
+    }
+
+    /// Copies an arbitrary texture into the readback texture used by
+    /// [`read_pixels`](Self::read_pixels).
+    ///
+    /// The source texture must have `COPY_SRC` usage and the same size and
+    /// format as the surface. This is how a hidden window, which renders into
+    /// an offscreen texture rather than a surface, makes its frame available
+    /// to `snap`/`snap_rect`.
+    pub fn copy_texture_to_readback(&self, src: &wgpu::Texture) {
         let ctxt = Context::get();
         let mut encoder = ctxt.create_command_encoder(Some("readback_copy_encoder"));
 
         encoder.copy_texture_to_texture(
             wgpu::TexelCopyTextureInfo {
-                texture: &frame.texture,
+                texture: src,
                 mip_level: 0,
                 origin: wgpu::Origin3d::ZERO,
                 aspect: wgpu::TextureAspect::All,
@@ -1146,12 +1421,16 @@ impl WgpuCanvas {
 
     /// The scale factor.
     pub fn scale_factor(&self) -> f64 {
-        self.window.scale_factor()
+        self.window
+            .as_ref()
+            .map_or(1.0, |window| window.scale_factor())
     }
 
     /// Set the window title.
     pub fn set_title(&mut self, title: &str) {
-        self.window.set_title(title)
+        if let Some(window) = &self.window {
+            window.set_title(title);
+        }
     }
 
     /// Set the window icon.
@@ -1162,7 +1441,9 @@ impl WgpuCanvas {
             rgba.extend_from_slice(&pixel.to_rgba().0);
         }
         let icon = Icon::from_rgba(rgba, width, height).unwrap();
-        self.window.set_window_icon(Some(icon))
+        if let Some(window) = &self.window {
+            window.set_window_icon(Some(icon));
+        }
     }
 
     /// Set the cursor grabbing behaviour.
@@ -1173,29 +1454,37 @@ impl WgpuCanvas {
         } else {
             CursorGrabMode::None
         };
-        let _ = self.window.set_cursor_grab(mode);
+        if let Some(window) = &self.window {
+            let _ = window.set_cursor_grab(mode);
+        }
     }
 
     /// Set the cursor position.
     pub fn set_cursor_position(&self, x: f64, y: f64) {
-        let _ = self
-            .window
-            .set_cursor_position(winit::dpi::PhysicalPosition::new(x, y));
+        if let Some(window) = &self.window {
+            let _ = window.set_cursor_position(winit::dpi::PhysicalPosition::new(x, y));
+        }
     }
 
     /// Toggle the cursor visibility.
     pub fn hide_cursor(&self, hide: bool) {
-        self.window.set_cursor_visible(!hide)
+        if let Some(window) = &self.window {
+            window.set_cursor_visible(!hide);
+        }
     }
 
     /// Hide the window.
     pub fn hide(&mut self) {
-        self.window.set_visible(false)
+        if let Some(window) = &self.window {
+            window.set_visible(false);
+        }
     }
 
     /// Show the window.
     pub fn show(&mut self) {
-        self.window.set_visible(true)
+        if let Some(window) = &self.window {
+            window.set_visible(true);
+        }
     }
 
     /// The state of a mouse button.
@@ -1207,6 +1496,41 @@ impl WgpuCanvas {
     pub fn get_key(&self, key: Key) -> Action {
         self.key_states[key as usize]
     }
+}
+
+// Translate a winit `KeyboardInput` event into the kiss3d-internal stream of
+// pending events. `Char` events are only emitted on key press — emitting them
+// on release as well caused egui textboxes to receive every character twice
+// (see https://github.com/dimforge/kiss3d/issues/380).
+#[cfg(not(target_arch = "wasm32"))]
+fn translate_keyboard_input(
+    key: Key,
+    action: Action,
+    logical_key: &winit::keyboard::Key,
+    text: Option<&str>,
+) -> Vec<PendingEvent> {
+    let mut events = vec![
+        PendingEvent::KeyState(key, action),
+        PendingEvent::WindowEvent(WindowEvent::Key(key, action, Modifiers::empty())),
+    ];
+
+    if action == Action::Press {
+        // Prefer winit's `text` field: it is `None` when the keypress shouldn't
+        // produce text (e.g. Ctrl+A), so it naturally suppresses unwanted text
+        // input from shortcuts. Fall back to the logical key's character form
+        // for platforms or events where `text` is not populated.
+        let chars = text.or_else(|| match logical_key {
+            winit::keyboard::Key::Character(s) => Some(s.as_str()),
+            _ => None,
+        });
+        if let Some(s) = chars {
+            for ch in s.chars() {
+                events.push(PendingEvent::WindowEvent(WindowEvent::Char(ch)));
+            }
+        }
+    }
+
+    events
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -1514,5 +1838,84 @@ fn translate_web_key(code: &str) -> Key {
         "Slash" => Key::Slash,
         "Tab" => Key::Tab,
         _ => Key::Unknown,
+    }
+}
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+mod tests {
+    use super::*;
+    use winit::keyboard::{Key as WinitKey, NamedKey, SmolStr};
+
+    fn char_events(events: &[PendingEvent]) -> Vec<char> {
+        events
+            .iter()
+            .filter_map(|e| match e {
+                PendingEvent::WindowEvent(WindowEvent::Char(c)) => Some(*c),
+                _ => None,
+            })
+            .collect()
+    }
+
+    // Regression test for https://github.com/dimforge/kiss3d/issues/380:
+    // a single key press/release cycle must only produce a single Char event,
+    // otherwise egui textboxes (and other text consumers) insert each typed
+    // character twice.
+    #[test]
+    fn issue_380_press_release_emits_single_char() {
+        let logical = WinitKey::Character(SmolStr::new("a"));
+
+        let press = translate_keyboard_input(Key::A, Action::Press, &logical, Some("a"));
+        let release = translate_keyboard_input(Key::A, Action::Release, &logical, Some("a"));
+
+        // Before the fix, both press and release emitted a Char event,
+        // so a single keystroke produced "aa" in egui textboxes.
+        assert_eq!(char_events(&press), vec!['a']);
+        assert_eq!(char_events(&release), Vec::<char>::new());
+
+        // Key + KeyState events must still fire on both press and release,
+        // so consumers that track key state (e.g. cameras) keep working.
+        assert!(press.iter().any(|e| matches!(
+            e,
+            PendingEvent::WindowEvent(WindowEvent::Key(Key::A, Action::Press, _))
+        )));
+        assert!(release.iter().any(|e| matches!(
+            e,
+            PendingEvent::WindowEvent(WindowEvent::Key(Key::A, Action::Release, _))
+        )));
+        assert!(press
+            .iter()
+            .any(|e| matches!(e, PendingEvent::KeyState(Key::A, Action::Press))));
+        assert!(release
+            .iter()
+            .any(|e| matches!(e, PendingEvent::KeyState(Key::A, Action::Release))));
+    }
+
+    // Named keys (Enter, Shift, ...) without text must not generate Char events
+    // on either press or release.
+    #[test]
+    fn named_key_emits_no_char() {
+        let logical = WinitKey::Named(NamedKey::Shift);
+        let press = translate_keyboard_input(Key::LShift, Action::Press, &logical, None);
+        let release = translate_keyboard_input(Key::LShift, Action::Release, &logical, None);
+        assert_eq!(char_events(&press), Vec::<char>::new());
+        assert_eq!(char_events(&release), Vec::<char>::new());
+    }
+
+    // If winit reports `text` (the canonical source), use it verbatim — it
+    // already accounts for shift/altgr layouts.
+    #[test]
+    fn uses_text_field_when_provided() {
+        let logical = WinitKey::Character(SmolStr::new("a"));
+        let press = translate_keyboard_input(Key::A, Action::Press, &logical, Some("A"));
+        assert_eq!(char_events(&press), vec!['A']);
+    }
+
+    // Some platforms may leave `text` empty for a printable key; fall back to
+    // the logical key's character form so users still get text input.
+    #[test]
+    fn falls_back_to_logical_key_when_text_missing() {
+        let logical = WinitKey::Character(SmolStr::new("z"));
+        let press = translate_keyboard_input(Key::Z, Action::Press, &logical, None);
+        assert_eq!(char_events(&press), vec!['z']);
     }
 }
