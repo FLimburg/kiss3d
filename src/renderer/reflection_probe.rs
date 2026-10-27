@@ -456,8 +456,13 @@ impl CubeFaceCamera {
 }
 
 impl crate::camera::Camera3d for CubeFaceCamera {
-    fn handle_event(&mut self, _: &crate::window::Canvas, _: &crate::event::WindowEvent) {}
-    fn update(&mut self, _: &crate::window::Canvas) {}
+    fn handle_event(
+        &mut self,
+        _: &crate::window::CanvasInputState<'_>,
+        _: &crate::event::WindowEvent,
+    ) {
+    }
+    fn update(&mut self, _: &crate::window::CanvasInputState<'_>) {}
     fn eye(&self) -> glamx::Vec3 {
         self.eye
     }

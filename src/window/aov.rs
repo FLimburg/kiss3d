@@ -186,7 +186,7 @@ impl Window {
 
         // Make sure the camera matrices match the target size, then propagate
         // world transforms so the AOV renderer can read them per object.
-        camera.update(&self.canvas);
+        camera.update(&self.canvas.input_state());
         let mut lights = LightCollection::with_ambient(self.ambient_intensity);
         scene.data_mut().prepare(0, camera, &mut lights, w, h);
 

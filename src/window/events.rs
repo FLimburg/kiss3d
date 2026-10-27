@@ -2,7 +2,7 @@
 
 use crate::camera::Camera2d;
 use crate::camera::Camera3d;
-use crate::event::{Action, Key, WindowEvent};
+use crate::event::{Action, WindowEvent};
 #[cfg(not(feature = "drm"))]
 use crate::event::EventManager;
 

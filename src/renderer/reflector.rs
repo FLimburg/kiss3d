@@ -29,7 +29,7 @@ use glamx::{Mat3, Mat4, Pose3, Vec3, Vec4};
 use crate::camera::Camera3d;
 use crate::context::Context;
 use crate::event::WindowEvent;
-use crate::window::Canvas;
+use crate::window::CanvasInputState;
 
 /// 4x4 reflection (Householder) matrix for the view-space plane with unit normal
 /// `n` and offset `d` (plane: `n·x + d = 0`).
@@ -101,8 +101,8 @@ impl MirrorCamera {
 }
 
 impl Camera3d for MirrorCamera {
-    fn handle_event(&mut self, _: &Canvas, _: &WindowEvent) {}
-    fn update(&mut self, _: &Canvas) {}
+    fn handle_event(&mut self, _: &CanvasInputState<'_>, _: &WindowEvent) {}
+    fn update(&mut self, _: &CanvasInputState<'_>) {}
     fn eye(&self) -> Vec3 {
         self.eye
     }

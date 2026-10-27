@@ -3,7 +3,6 @@
 #![allow(clippy::await_holding_refcell_ref)]
 
 use crate::camera::{Camera2d, Camera3d, FixedView3d};
-use crate::color::Color;
 use crate::context::Context;
 use crate::event::WindowEvent;
 use crate::light::LightCollection;
@@ -16,7 +15,6 @@ use crate::resource::{
     RenderPhase, RenderTarget,
 };
 use crate::scene::{SceneNode2d, SceneNode3d};
-use crate::window::CanvasInputState;
 
 use super::Window;
 
@@ -121,7 +119,7 @@ impl Window {
 
     async fn render_single_frame(
         &mut self,
-        scene: Option<&mut SceneNode3d>,
+        mut scene: Option<&mut SceneNode3d>,
         mut scene_2d: Option<&mut SceneNode2d>,
         camera: &mut dyn Camera3d,
         camera_2d: &mut dyn Camera2d,
@@ -528,7 +526,7 @@ impl Window {
 
         // Render the 3D scene using two-phase rendering
         for pass in 0usize..camera.num_passes() {
-            camera.start_pass(pass, &input);
+            camera.start_pass(pass, &self.canvas.input_state());
 
             // Phase 1: Prepare - collect uniforms in CPU memory and gather lights from scene
             if let Some(scene) = scene.as_deref_mut() {
@@ -832,7 +830,7 @@ impl Window {
             self.hdr.composite_oit(&mut encoder, &mut self.gpu_timer);
         }
 
-        camera.render_complete(&input);
+        camera.render_complete(&self.canvas.input_state());
 
         // Render the 2D planar scene (into the HDR film, like the 3D scene).
         {

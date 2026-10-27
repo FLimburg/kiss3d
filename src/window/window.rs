@@ -2,8 +2,10 @@
 
 #![cfg(not(feature = "drm"))]
 
+use std::cell::RefCell;
 use std::path::Path;
-use std::sync::mpsc;
+use std::rc::Rc;
+use std::sync::mpsc::{self, Receiver};
 use std::sync::Arc;
 
 use crate::builtin::ShadowMapper;
@@ -135,6 +137,21 @@ impl Window {
     #[inline]
     pub fn should_close(&self) -> bool {
         self.should_close
+    }
+
+    /// Closes the window.
+    ///
+    /// After calling this method, [`render()`](Self::render) will return `false`
+    /// on the next frame, allowing the render loop to exit gracefully.
+    #[inline]
+    pub fn close(&mut self) {
+        self.should_close = true;
+    }
+
+    /// Sets the background clear colour.
+    #[inline]
+    pub fn set_background_color(&mut self, color: Color) {
+        self.background = color;
     }
 
     /// The window width.
