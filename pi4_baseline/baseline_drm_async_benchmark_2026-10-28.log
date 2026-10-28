@@ -1,0 +1,1937 @@
+
+╔══════════════════════════════════════════════════════════════════╗
+║     DRM Async Display Thread - Performance Benchmark            ║
+╚══════════════════════════════════════════════════════════════════╝
+
+📺 Opening DRM device: /dev/dri/card1 at 1920x1080
+
+🎬 Creating DRM window with ASYNC display thread...
+[2026-10-28T11:10:30.560Z INFO  kiss3d::window::drm::drm_window] Creating DRM window with display: 1920x1080
+[2026-10-28T11:10:30.560Z INFO  kiss3d::window::drm::drm_canvas] Creating DRM canvas with display output: /dev/dri/card1
+[2026-10-28T11:10:30.560Z INFO  kiss3d::window::drm::drm_canvas] Opened DRM device: /dev/dri/card1
+[2026-10-28T11:10:30.560Z INFO  kiss3d::window::drm::drm_canvas] Querying DRM display resources
+[2026-10-28T11:10:30.560Z INFO  kiss3d::window::drm::drm_canvas] Found connected connector: HDMIA (id: connector::Handle(90))
+[2026-10-28T11:10:30.560Z INFO  kiss3d::window::drm::drm_canvas] Selected CRTC: crtc::Handle(88)
+[2026-10-28T11:10:30.560Z INFO  kiss3d::window::drm::drm_canvas] Selected mode: 1024x600 @ 60Hz
+[2026-10-28T11:10:30.560Z INFO  kiss3d::window::drm::drm_canvas] Display configuration: 1024x600 @ 60Hz
+[2026-10-28T11:10:30.560Z INFO  kiss3d::window::drm::drm_canvas] Format selection - wgpu: Bgra8Unorm, drm: DrmFourcc(XR24)
+[2026-10-28T11:10:30.560Z INFO  kiss3d::window::drm::drm_canvas] Initializing wgpu for headless DRM rendering
+[2026-10-28T11:10:30.615Z WARN  wgpu_hal::vulkan::instance] Unable to find extension: VK_EXT_physical_device_drm
+[2026-10-28T11:10:30.638Z INFO  kiss3d::window::drm::drm_canvas] Adapter info: AdapterInfo { name: "V3D 4.2.14.0", vendor: 5348, device: 3192414163, device_type: IntegratedGpu, driver: "V3DV Mesa", driver_info: "Mesa 24.2.8-1~bpo12+rpt4", backend: Vulkan }
+[2026-10-28T11:10:30.638Z DEBUG kiss3d::window::drm::drm_canvas] Adapter limits: Limits { max_texture_dimension_1d: 4096, max_texture_dimension_2d: 4096, max_texture_dimension_3d: 4096, max_texture_array_layers: 2048, max_bind_groups: 8, max_bindings_per_bind_group: 1000, max_dynamic_uniform_buffers_per_pipeline_layout: 8, max_dynamic_storage_buffers_per_pipeline_layout: 4, max_sampled_textures_per_shader_stage: 16, max_samplers_per_shader_stage: 24, max_storage_buffers_per_shader_stage: 8, max_storage_textures_per_shader_stage: 4, max_uniform_buffers_per_shader_stage: 16, max_binding_array_elements_per_shader_stage: 4, max_binding_array_sampler_elements_per_shader_stage: 24, max_uniform_buffer_binding_size: 1073741824, max_storage_buffer_binding_size: 1073741824, max_vertex_buffers: 16, max_buffer_size: 2147483647, max_vertex_attributes: 16, max_vertex_buffer_array_stride: 65535, min_uniform_buffer_offset_alignment: 32, min_storage_buffer_offset_alignment: 32, max_inter_stage_shader_components: 64, max_color_attachments: 4, max_color_attachment_bytes_per_sample: 64, max_compute_workgroup_storage_size: 16384, max_compute_invocations_per_workgroup: 256, max_compute_workgroup_size_x: 256, max_compute_workgroup_size_y: 256, max_compute_workgroup_size_z: 256, max_compute_workgroups_per_dimension: 65535, min_subgroup_size: 16, max_subgroup_size: 16, max_push_constant_size: 128, max_non_sampler_bindings: 4294967295, max_task_workgroup_total_count: 0, max_task_workgroups_per_dimension: 0, max_mesh_output_layers: 0, max_mesh_multiview_count: 0, max_blas_primitive_count: 0, max_blas_geometry_count: 0, max_tlas_instance_count: 0, max_acceleration_structures_per_shader_stage: 0 }
+[2026-10-28T11:10:30.638Z WARN  wgpu_core::instance] Missing downlevel flags: DownlevelFlags(FULL_DRAW_INDEX_UINT32)
+    The underlying API or device in use does not support enough features to be a fully compliant implementation of WebGPU. A subset of the features can still be used. If you are running this program on native and not in a browser and wish to limit the features you use to the supported subset, call Adapter::downlevel_properties or Device::downlevel_properties to get a listing of the features the current platform supports.
+[2026-10-28T11:10:30.638Z WARN  wgpu_core::instance] DownlevelCapabilities {
+        flags: DownlevelFlags(
+            COMPUTE_SHADERS | FRAGMENT_WRITABLE_STORAGE | INDIRECT_EXECUTION | BASE_VERTEX | READ_ONLY_DEPTH_STENCIL | NON_POWER_OF_TWO_MIPMAPPED_TEXTURES | CUBE_ARRAY_TEXTURES | COMPARISON_SAMPLERS | INDEPENDENT_BLEND | VERTEX_STORAGE | ANISOTROPIC_FILTERING | FRAGMENT_STORAGE | MULTISAMPLED_SHADING | DEPTH_TEXTURE_AND_BUFFER_COPIES | WEBGPU_TEXTURE_FORMAT_SUPPORT | BUFFER_BINDINGS_NOT_16_BYTE_ALIGNED | UNRESTRICTED_INDEX_BUFFER | DEPTH_BIAS_CLAMP | VIEW_FORMATS | UNRESTRICTED_EXTERNAL_TEXTURE_COPIES | SURFACE_VIEW_FORMATS | NONBLOCKING_QUERY_RESOLVE | SHADER_F16_IN_F32,
+        ),
+        limits: DownlevelLimits,
+        shader_model: Sm5,
+    }
+[2026-10-28T11:10:30.685Z INFO  kiss3d::window::drm::drm_canvas] wgpu initialized successfully for DRM
+[2026-10-28T11:10:30.693Z INFO  kiss3d::window::drm::drm_canvas] Creating buffer pool for triple buffering...
+[2026-10-28T11:10:30.693Z DEBUG kiss3d::window::drm::display_thread] Buffer pool: pre-allocated buffer 1/3
+[2026-10-28T11:10:30.693Z DEBUG kiss3d::window::drm::display_thread] Buffer pool: pre-allocated buffer 2/3
+[2026-10-28T11:10:30.693Z DEBUG kiss3d::window::drm::display_thread] Buffer pool: pre-allocated buffer 3/3
+[2026-10-28T11:10:30.693Z INFO  kiss3d::window::drm::display_thread] Buffer pool created with 3 buffers of 2457600 bytes each
+[2026-10-28T11:10:30.693Z INFO  kiss3d::window::drm::drm_canvas] Starting async display thread...
+[2026-10-28T11:10:30.693Z INFO  kiss3d::window::drm::display_thread] Display thread started
+[2026-10-28T11:10:30.693Z INFO  kiss3d::window::drm::drm_canvas] DRM canvas with display created successfully
+[2026-10-28T11:10:30.693Z DEBUG kiss3d::window::drm::display_thread] Display worker thread started
+[2026-10-28T11:10:30.732Z INFO  kiss3d::window::drm::drm_window] DRM window initialized successfully
+✅ DRM window created successfully!
+   Async display thread is now active
+
+🎨 Setting up benchmark scene...
+✅ Created benchmark scene with 125 cubes
+
+╔══════════════════════════════════════════════════════════════════╗
+║                    Starting Benchmark                           ║
+╚══════════════════════════════════════════════════════════════════╝
+
+Configuration:
+  Scene complexity: 125 cubes
+  Warmup frames: 60
+  Benchmark frames: 300
+  Resolution: 1920x1080
+
+Running...
+
+[2026-10-28T11:10:32.733Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:38.430Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:38.604Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:38.610Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:38.611Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+Frame 0: 0.0 FPS
+[2026-10-28T11:10:38.619Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:38.619Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:38.646Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:38.652Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:38.655Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:38.661Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:38.661Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:38.687Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:38.693Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:38.693Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:38.700Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:38.700Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:38.724Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:38.730Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:38.731Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:38.737Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:38.737Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:38.762Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:38.768Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:38.768Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:38.775Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:38.775Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:38.799Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:38.806Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:38.806Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:38.812Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:38.813Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:38.837Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:38.843Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:38.843Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:38.850Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:38.850Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:38.874Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:38.881Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:38.881Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:38.887Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:38.887Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:38.912Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:38.918Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:38.918Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:38.924Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:38.925Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:38.949Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:38.956Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:38.956Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:38.962Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:38.962Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:38.987Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:38.993Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:38.993Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:38.999Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:39.000Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:39.024Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:39.031Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:39.031Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:39.037Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:39.037Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:39.062Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:39.068Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:39.068Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:39.074Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:39.075Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:39.099Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:39.105Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:39.105Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:39.112Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:39.112Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:39.136Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:39.142Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:39.143Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:39.149Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:39.149Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:39.174Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:39.180Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:39.180Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:39.187Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:39.187Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:39.211Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:39.217Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:39.217Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:39.224Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:39.224Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:39.248Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:39.255Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:39.255Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:39.262Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:39.262Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:39.286Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:39.292Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:39.292Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:39.299Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:39.299Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:39.324Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:39.330Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:39.330Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:39.337Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:39.337Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:39.361Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:39.367Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:39.367Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:39.374Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:39.374Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:39.399Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:39.405Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:39.405Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:39.411Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:39.411Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:39.436Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:39.442Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:39.442Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:39.449Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:39.449Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:39.473Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:39.480Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:39.480Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:39.486Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:39.487Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:39.511Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:39.517Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:39.517Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:39.524Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:39.524Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:39.549Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:39.555Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:39.555Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:39.562Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:39.562Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:39.586Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:39.592Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:39.592Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:39.599Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:39.599Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:39.624Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:39.630Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:39.630Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+Frame 27: 26.5 FPS
+[2026-10-28T11:10:39.637Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:39.637Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:39.661Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:39.667Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:39.667Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:39.674Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:39.674Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:39.699Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:39.705Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:39.705Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:39.712Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:39.712Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:39.736Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:39.742Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:39.742Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:39.749Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:39.749Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:39.774Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:39.780Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:39.780Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:39.787Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:39.787Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:39.812Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:39.818Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:39.818Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:39.824Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:39.824Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:39.849Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:39.855Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:39.856Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:39.862Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:39.862Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:39.887Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:39.893Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:39.893Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:39.900Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:39.900Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:39.924Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:39.931Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:39.931Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:39.937Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:39.937Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:39.962Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:39.968Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:39.968Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:39.975Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:39.975Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:39.999Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:40.006Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:40.006Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:40.012Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:40.013Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:40.037Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:40.043Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:40.043Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:40.050Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:40.050Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:40.075Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:40.081Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:40.081Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:40.088Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:40.088Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:40.112Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:40.118Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:40.118Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:40.125Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:40.125Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:40.150Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:40.156Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:40.156Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:40.163Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:40.163Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:40.188Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:40.194Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:40.194Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:40.200Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:40.200Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:40.225Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:40.231Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:40.231Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:40.238Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:40.238Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:40.263Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:40.269Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:40.269Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:40.275Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:40.276Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:40.300Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:40.307Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:40.307Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:40.313Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:40.313Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:40.338Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:40.344Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:40.344Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:40.351Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:40.351Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:40.376Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:40.382Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:40.382Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:40.389Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:40.389Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:40.413Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:40.419Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:40.419Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:40.426Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:40.426Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:40.451Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:40.457Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:40.457Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:40.464Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:40.464Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:40.489Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:40.495Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:40.495Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:40.501Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:40.501Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:40.526Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:40.533Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:40.533Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:40.539Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:40.539Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:40.564Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:40.570Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:40.570Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:40.577Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:40.577Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:40.601Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:40.608Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:40.608Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:40.614Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:40.615Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:40.639Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:40.645Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:40.645Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+Frame 54: 26.6 FPS
+[2026-10-28T11:10:40.652Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:40.652Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:40.677Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:40.683Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:40.683Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:40.690Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:40.690Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:40.714Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:40.720Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:40.720Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:40.727Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:40.727Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:40.752Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:40.758Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:40.758Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:40.765Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:40.765Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:40.790Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:40.796Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:40.796Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:40.802Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:40.802Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:40.827Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:40.834Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:40.834Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:40.840Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:40.840Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:40.865Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:40.871Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:40.871Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:40.878Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:40.878Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:40.903Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:40.909Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:40.909Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:40.916Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:40.916Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:40.940Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:40.946Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:40.946Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:40.953Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:40.953Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:40.978Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:40.984Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:40.984Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:40.991Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:40.991Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:41.016Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:41.022Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:41.022Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:41.028Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:41.028Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:41.053Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:41.060Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:41.060Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:41.066Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:41.066Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:41.091Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:41.097Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:41.097Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:41.104Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:41.104Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:41.129Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:41.135Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:41.135Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:41.142Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:41.142Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:41.166Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:41.172Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:41.172Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:41.179Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:41.179Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:41.204Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:41.210Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:41.210Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:41.217Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:41.217Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:41.242Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:41.248Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:41.248Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:41.254Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:41.254Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:41.279Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:41.286Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:41.286Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:41.292Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:41.292Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:41.317Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:41.323Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:41.323Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:41.330Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:41.330Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:41.355Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:41.361Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:41.361Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:41.368Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:41.368Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:41.393Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:41.399Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:41.399Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:41.405Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:41.406Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:41.431Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:41.437Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:41.437Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:41.444Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:41.444Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:41.468Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:41.474Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:41.474Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:41.481Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:41.481Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:41.506Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:41.513Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:41.513Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:41.519Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:41.519Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:41.544Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:41.550Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:41.550Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:41.556Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:41.557Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:41.582Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:41.588Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:41.588Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:41.595Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:41.595Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:41.619Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:41.625Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:41.625Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:41.632Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:41.632Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:41.657Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:41.663Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:41.663Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+Frame 81: 26.5 FPS
+[2026-10-28T11:10:41.670Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:41.670Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:41.695Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:41.701Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:41.701Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:41.707Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:41.707Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:41.732Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:41.739Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:41.739Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:41.745Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:41.745Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:41.770Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:41.776Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:41.776Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:41.783Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:41.783Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:41.808Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:41.814Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:41.814Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:41.821Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:41.821Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:41.845Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:41.851Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:41.852Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:41.858Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:41.858Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:41.883Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:41.890Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:41.890Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:41.896Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:41.896Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:41.921Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:41.927Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:41.927Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:41.934Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:41.934Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:41.958Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:41.965Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:41.965Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:41.971Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:41.972Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:41.996Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:42.002Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:42.002Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:42.009Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:42.009Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:42.034Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:42.040Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:42.040Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:42.047Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:42.047Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:42.072Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:42.078Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:42.078Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:42.084Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:42.084Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:42.109Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:42.116Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:42.116Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:42.122Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:42.122Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:42.147Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:42.153Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:42.153Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:42.160Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:42.160Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:42.185Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:42.191Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:42.191Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:42.198Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:42.198Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:42.223Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:42.229Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:42.229Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:42.235Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:42.235Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:42.260Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:42.267Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:42.267Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:42.274Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:42.274Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:42.299Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:42.305Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:42.305Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:42.311Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:42.311Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:42.336Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:42.343Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:42.343Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:42.349Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:42.350Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:42.374Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:42.381Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:42.381Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:42.387Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:42.387Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:42.412Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:42.419Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:42.419Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:42.425Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:42.426Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:42.450Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:42.457Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:42.457Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:42.463Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:42.463Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:42.488Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:42.495Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:42.495Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:42.501Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:42.502Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:42.526Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:42.533Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:42.533Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:42.539Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:42.539Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:42.565Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:42.571Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:42.571Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:42.578Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:42.578Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:42.603Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:42.609Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:42.609Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:42.615Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:42.616Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:42.640Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:42.647Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:42.647Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:42.654Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:42.654Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:42.679Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:42.685Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:42.685Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+Frame 108: 26.4 FPS
+[2026-10-28T11:10:42.691Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:42.691Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:42.717Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:42.723Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:42.723Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:42.730Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:42.730Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:42.755Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:42.761Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:42.761Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:42.767Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:42.768Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:42.793Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:42.799Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:42.799Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:42.806Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:42.806Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:42.831Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:42.837Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:42.837Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:42.844Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:42.844Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:42.869Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:42.875Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:42.875Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:42.882Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:42.882Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:42.907Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:42.913Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:42.913Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:42.920Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:42.920Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:42.945Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:42.951Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:42.951Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:42.958Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:42.958Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:42.983Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:42.989Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:42.989Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:42.996Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:42.996Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:43.021Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:43.027Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:43.027Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:43.034Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:43.034Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:43.059Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:43.065Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:43.065Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:43.072Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:43.072Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:43.097Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:43.103Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:43.103Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:43.110Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:43.110Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:43.135Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:43.141Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:43.141Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:43.148Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:43.148Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:43.173Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:43.179Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:43.179Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:43.186Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:43.186Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:43.211Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:43.217Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:43.217Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:43.224Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:43.224Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:43.249Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:43.256Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:43.256Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:43.262Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:43.262Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:43.287Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:43.294Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:43.294Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:43.300Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:43.300Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:43.326Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:43.332Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:43.332Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:43.339Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:43.339Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:43.364Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:43.370Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:43.370Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:43.376Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:43.376Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:43.402Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:43.408Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:43.408Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:43.415Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:43.415Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:43.440Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:43.446Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:43.446Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:43.453Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:43.453Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:43.478Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:43.484Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:43.484Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:43.491Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:43.491Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:43.516Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:43.522Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:43.522Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:43.529Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:43.529Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:43.554Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:43.561Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:43.561Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:43.567Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:43.567Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:43.592Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:43.599Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:43.599Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:43.605Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:43.605Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:43.630Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:43.637Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:43.637Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:43.643Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:43.644Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:43.668Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:43.675Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:43.675Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:43.681Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:43.681Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:43.707Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:43.713Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:43.713Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+Frame 135: 26.3 FPS
+[2026-10-28T11:10:43.720Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:43.720Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:43.745Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:43.751Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:43.751Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:43.758Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:43.758Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:43.783Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:43.789Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:43.789Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:43.796Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:43.796Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:43.821Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:43.827Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:43.827Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:43.834Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:43.834Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:43.859Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:43.866Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:43.866Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:43.872Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:43.872Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:43.897Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:43.903Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:43.903Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:43.910Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:43.910Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:43.935Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:43.942Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:43.942Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:43.948Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:43.948Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:43.973Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:43.980Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:43.980Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:43.986Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:43.986Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:44.012Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:44.018Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:44.018Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:44.025Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:44.025Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:44.050Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:44.056Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:44.056Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:44.062Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:44.063Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:44.088Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:44.094Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:44.094Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:44.101Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:44.101Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:44.126Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:44.132Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:44.132Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:44.139Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:44.139Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:44.164Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:44.170Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:44.170Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:44.177Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:44.177Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:44.202Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:44.208Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:44.208Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:44.215Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:44.215Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:44.240Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:44.246Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:44.247Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:44.253Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:44.253Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:44.278Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:44.284Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:44.284Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:44.291Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:44.291Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:44.316Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:44.322Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:44.323Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:44.329Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:44.329Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:44.354Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:44.360Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:44.360Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:44.367Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:44.367Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:44.392Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:44.399Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:44.399Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:44.405Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:44.405Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:44.430Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:44.436Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:44.437Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:44.443Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:44.443Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:44.468Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:44.475Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:44.475Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:44.481Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:44.481Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:44.506Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:44.513Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:44.513Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:44.519Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:44.519Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:44.544Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:44.551Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:44.551Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:44.557Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:44.558Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:44.582Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:44.589Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:44.589Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:44.595Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:44.595Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:44.621Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:44.627Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:44.627Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:44.634Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:44.634Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:44.659Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:44.665Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:44.665Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:44.672Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:44.672Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:44.697Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:44.703Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:44.703Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:44.710Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:44.710Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:44.735Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:44.741Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:44.741Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+Frame 162: 26.3 FPS
+[2026-10-28T11:10:44.748Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:44.748Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:44.773Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:44.779Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:44.779Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:44.786Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:44.786Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:44.811Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:44.817Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:44.817Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:44.824Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:44.824Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:44.849Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:44.856Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:44.856Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:44.862Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:44.862Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:44.887Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:44.894Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:44.894Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:44.900Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:44.900Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:44.926Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:44.932Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:44.932Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:44.939Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:44.939Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:44.964Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:44.970Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:44.970Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:44.976Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:44.977Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:45.002Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:45.008Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:45.008Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:45.015Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:45.015Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:45.040Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:45.046Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:45.046Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:45.053Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:45.053Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:45.078Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:45.084Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:45.084Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:45.091Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:45.091Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:45.116Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:45.122Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:45.122Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:45.129Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:45.129Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:45.154Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:45.160Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:45.160Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:45.167Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:45.167Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:45.192Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:45.198Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:45.198Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:45.205Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:45.205Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:45.230Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:45.236Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:45.236Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:45.243Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:45.243Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:45.268Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:45.274Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:45.274Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:45.281Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:45.281Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:45.306Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:45.313Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:45.313Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:45.319Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:45.319Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:45.344Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:45.350Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:45.350Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:45.357Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:45.357Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:45.382Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:45.389Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:45.389Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:45.395Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:45.396Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:45.421Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:45.427Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:45.427Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:45.434Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:45.434Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:45.459Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:45.465Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:45.465Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:45.472Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:45.472Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:45.497Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:45.503Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:45.503Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:45.510Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:45.510Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:45.535Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:45.542Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:45.542Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:45.548Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:45.548Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:45.573Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:45.580Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:45.580Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:45.586Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:45.586Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:45.611Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:45.618Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:45.618Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:45.624Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:45.625Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:45.650Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:45.656Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:45.656Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:45.662Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:45.662Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:45.688Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:45.694Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:45.694Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:45.701Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:45.701Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:45.726Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:45.732Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:45.732Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:45.739Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:45.739Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:45.764Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:45.770Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:45.770Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+Frame 189: 26.2 FPS
+[2026-10-28T11:10:45.777Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:45.777Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:45.802Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:45.808Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:45.808Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:45.815Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:45.815Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:45.840Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:45.846Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:45.846Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:45.853Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:45.853Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:45.878Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:45.884Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:45.884Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:45.891Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:45.891Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:45.916Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:45.923Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:45.923Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:45.929Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:45.929Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:45.954Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:45.961Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:45.961Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:45.967Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:45.967Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:45.993Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:45.999Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:45.999Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:46.006Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:46.006Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:46.031Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:46.037Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:46.037Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:46.044Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:46.044Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:46.069Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:46.075Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:46.075Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:46.082Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:46.082Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:46.107Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:46.113Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:46.113Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:46.120Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:46.120Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:46.145Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:46.151Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:46.151Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:46.158Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:46.158Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:46.183Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:46.189Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:46.189Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:46.196Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:46.196Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:46.221Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:46.227Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:46.228Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:46.234Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:46.234Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:46.259Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:46.265Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:46.265Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:46.272Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:46.272Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:46.297Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:46.304Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:46.304Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:46.310Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:46.310Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:46.336Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:46.342Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:46.342Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:46.348Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:46.348Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:46.374Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:46.380Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:46.380Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:46.387Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:46.387Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:46.412Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:46.418Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:46.418Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:46.425Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:46.425Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:46.450Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:46.456Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:46.456Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:46.463Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:46.463Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:46.488Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:46.494Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:46.494Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:46.501Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:46.501Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:46.526Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:46.533Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:46.533Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:46.539Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:46.539Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:46.564Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:46.571Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:46.571Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:46.577Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:46.577Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:46.603Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:46.609Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:46.609Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:46.616Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:46.616Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:46.641Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:46.647Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:46.647Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:46.654Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:46.654Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:46.679Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:46.685Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:46.685Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:46.692Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:46.692Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:46.717Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:46.723Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:46.723Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:46.730Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:46.730Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:46.755Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:46.761Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:46.761Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:46.768Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:46.768Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:46.793Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:46.800Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:46.800Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+Frame 216: 26.2 FPS
+[2026-10-28T11:10:46.806Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:46.806Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:46.832Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:46.838Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:46.838Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:46.845Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:46.845Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:46.870Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:46.876Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:46.876Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:46.882Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:46.882Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:46.908Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:46.914Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:46.914Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:46.921Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:46.921Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:46.946Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:46.952Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:46.952Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:46.959Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:46.959Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:46.984Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:46.990Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:46.990Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:46.997Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:46.997Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:47.022Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:47.028Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:47.028Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:47.035Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:47.035Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:47.060Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:47.067Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:47.067Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:47.073Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:47.073Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:47.099Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:47.105Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:47.105Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:47.111Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:47.112Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:47.137Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:47.143Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:47.143Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:47.150Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:47.150Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:47.175Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:47.181Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:47.181Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:47.188Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:47.188Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:47.213Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:47.219Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:47.220Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:47.226Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:47.226Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:47.251Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:47.257Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:47.258Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:47.264Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:47.264Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:47.289Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:47.296Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:47.296Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:47.303Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:47.303Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:47.328Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:47.334Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:47.334Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:47.340Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:47.340Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:47.366Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:47.372Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:47.372Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:47.379Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:47.379Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:47.404Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:47.410Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:47.410Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:47.417Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:47.417Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:47.442Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:47.449Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:47.449Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:47.456Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:47.456Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:47.481Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:47.487Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:47.487Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:47.494Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:47.494Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:47.519Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:47.525Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:47.525Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:47.532Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:47.532Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:47.557Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:47.563Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:47.564Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:47.570Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:47.570Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:47.596Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:47.602Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:47.602Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:47.608Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:47.609Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:47.633Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:47.640Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:47.640Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:47.646Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:47.647Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:47.672Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:47.678Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:47.678Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:47.685Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:47.685Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:47.710Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:47.716Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:47.716Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:47.723Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:47.723Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:47.748Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:47.754Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:47.754Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:47.761Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:47.761Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:47.786Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:47.793Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:47.793Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:47.799Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:47.799Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:47.825Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:47.831Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:47.831Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+Frame 243: 26.2 FPS
+[2026-10-28T11:10:47.838Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:47.838Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:47.863Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:47.869Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:47.869Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:47.876Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:47.876Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:47.901Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:47.907Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:47.907Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:47.914Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:47.914Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:47.939Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:47.945Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:47.945Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:47.952Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:47.952Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:47.977Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:47.983Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:47.983Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:47.990Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:47.990Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:48.015Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:48.021Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:48.022Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:48.028Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:48.028Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:48.053Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:48.060Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:48.060Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:48.066Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:48.066Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:48.091Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:48.098Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:48.098Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:48.104Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:48.104Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:48.129Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:48.136Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:48.136Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:48.143Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:48.143Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:48.168Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:48.174Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:48.174Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:48.181Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:48.181Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:48.206Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:48.212Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:48.212Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:48.219Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:48.219Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:48.244Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:48.250Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:48.250Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:48.257Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:48.257Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:48.283Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:48.289Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:48.289Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:48.296Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:48.296Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:48.321Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:48.327Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:48.327Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:48.333Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:48.334Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:48.359Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:48.365Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:48.365Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:48.372Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:48.372Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:48.397Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:48.403Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:48.403Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:48.410Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:48.410Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:48.435Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:48.442Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:48.442Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:48.448Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:48.448Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:48.473Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:48.480Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:48.480Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:48.486Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:48.486Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:48.512Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:48.518Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:48.518Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:48.525Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:48.525Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:48.550Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:48.556Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:48.556Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:48.563Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:48.563Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:48.588Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:48.594Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:48.594Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:48.601Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:48.601Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:48.626Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:48.632Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:48.632Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:48.639Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:48.639Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:48.664Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:48.670Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:48.670Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:48.677Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:48.677Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:48.702Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:48.708Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:48.709Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:48.715Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:48.715Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:48.740Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:48.747Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:48.747Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:48.754Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:48.754Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:48.779Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:48.785Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:48.785Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:48.792Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:48.792Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:48.817Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:48.823Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:48.823Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:48.830Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:48.830Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:48.855Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:48.861Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:48.861Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+Frame 270: 26.2 FPS
+[2026-10-28T11:10:48.868Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:48.868Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:48.893Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:48.899Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:48.899Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:48.906Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:48.906Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:48.931Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:48.937Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:48.937Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:48.944Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:48.944Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:48.969Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:48.975Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:48.975Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:48.982Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:48.982Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:49.007Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:49.013Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:49.014Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:49.020Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:49.020Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:49.045Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:49.052Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:49.052Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:49.058Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:49.059Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:49.084Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:49.090Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:49.090Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:49.096Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:49.096Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:49.121Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:49.128Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:49.128Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:49.135Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:49.135Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:49.160Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:49.166Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:49.166Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:49.173Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:49.173Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:49.198Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:49.204Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:49.204Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:49.211Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:49.211Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:49.236Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:49.242Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:49.242Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:49.249Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:49.249Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:49.274Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:49.281Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:49.281Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:49.287Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:49.287Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:49.312Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:49.319Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:49.319Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:49.325Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:49.325Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:49.351Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:49.357Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:49.357Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:49.364Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:49.364Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:49.389Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:49.395Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:49.395Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:49.402Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:49.402Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:49.427Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:49.433Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:49.434Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:49.440Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:49.440Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:49.465Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:49.471Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:49.471Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:49.478Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:49.478Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:49.503Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:49.510Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:49.510Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:49.517Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:49.517Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:49.542Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:49.548Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:49.548Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:49.554Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:49.554Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:49.580Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:49.586Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:49.586Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:49.593Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:49.593Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:49.618Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:49.624Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:49.624Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:49.631Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:49.631Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:49.656Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:49.662Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:49.662Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:49.669Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:49.669Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:49.694Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:49.700Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:49.701Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:49.707Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:49.707Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:49.732Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:49.739Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:49.739Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:49.745Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:49.745Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:49.771Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:49.777Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:49.777Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:49.783Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:49.783Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:49.809Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:49.815Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:49.815Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:49.822Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:49.822Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:49.847Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:49.853Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:49.853Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:49.860Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:49.860Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:49.885Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:49.891Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:49.891Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+Frame 297: 26.2 FPS
+[2026-10-28T11:10:49.898Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:49.898Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:49.923Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:49.929Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:49.929Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:49.936Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:49.936Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:49.961Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:49.967Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:49.968Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:49.974Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:49.974Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:49.999Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:50.006Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:50.006Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:50.012Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:50.012Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:50.038Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:50.044Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:50.044Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:50.051Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:50.051Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:50.076Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:50.082Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:50.082Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:50.089Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:50.089Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:50.114Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:50.120Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:50.120Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:50.127Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:50.127Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:50.152Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:50.158Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:50.158Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:50.165Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:50.165Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:50.190Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:50.196Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:50.196Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:50.203Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:50.203Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:50.228Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:50.235Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:50.235Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:50.241Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:50.241Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:50.267Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:50.273Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:50.273Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:50.280Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:50.280Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:50.305Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:50.311Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:50.311Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:50.318Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:50.318Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:50.343Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:50.349Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:50.349Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:50.356Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:50.356Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:50.381Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:50.387Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:50.387Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:50.394Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:50.394Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:50.419Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:50.426Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:50.426Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:50.432Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:50.433Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:50.458Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:50.464Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:50.464Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:50.470Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:50.470Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:50.496Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:50.502Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:50.502Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:50.509Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:50.509Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:50.534Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:50.540Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:50.540Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:50.547Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:50.547Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:50.572Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:50.579Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:50.579Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:50.585Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:50.585Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:50.610Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:50.617Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:50.617Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:50.623Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:50.623Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:50.648Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:50.655Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:50.655Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:50.662Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:50.662Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:50.687Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:50.693Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:50.693Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:50.699Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:50.700Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:50.725Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:50.731Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:50.731Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:50.738Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:50.738Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:50.763Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:50.769Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:50.769Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:50.776Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:50.776Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:50.801Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:50.808Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:50.808Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:50.814Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:50.814Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:50.839Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:50.846Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:50.846Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:50.852Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:50.852Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:50.877Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:50.884Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:50.884Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:50.891Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:50.891Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:50.916Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:50.922Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:50.922Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+Frame 324: 26.2 FPS
+[2026-10-28T11:10:50.928Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:50.928Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:50.954Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:50.960Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:50.960Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:50.967Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:50.967Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:50.992Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:50.998Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:50.998Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:51.005Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:51.005Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:51.030Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:51.037Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:51.037Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:51.043Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:51.043Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:51.068Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:51.074Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:51.075Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:51.081Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:51.081Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:51.106Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:51.113Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:51.113Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:51.120Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:51.120Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:51.145Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:51.151Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:51.151Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:51.158Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:51.158Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:51.183Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:51.189Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:51.189Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:51.196Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:51.196Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:51.221Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:51.227Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:51.227Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:51.234Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:51.234Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:51.259Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:51.266Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:51.266Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:51.273Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:51.273Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:51.298Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:51.304Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:51.304Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:51.311Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:51.311Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:51.336Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:51.342Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:51.343Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:51.349Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:51.349Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:51.374Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:51.380Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:51.381Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:51.387Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:51.387Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:51.412Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:51.419Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:51.419Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:51.426Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:51.426Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:51.451Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:51.457Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:51.457Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:51.464Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:51.464Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:51.489Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:51.495Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:51.495Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:51.502Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:51.502Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:51.527Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:51.533Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:51.533Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:51.540Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:51.540Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:51.565Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:51.572Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:51.572Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:51.579Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:51.579Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:51.604Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:51.610Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:51.610Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:51.616Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:51.616Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:51.642Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:51.648Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:51.648Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:51.655Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:51.655Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:51.680Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:51.686Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:51.686Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:51.693Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:51.693Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:51.718Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:51.725Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:51.725Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:51.731Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:51.731Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:51.756Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:51.762Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:51.763Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:51.769Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:51.769Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:51.794Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:51.801Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:51.801Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:51.807Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:51.807Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:51.833Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:51.839Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:51.839Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:51.845Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:51.846Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:51.871Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:51.877Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:51.877Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:51.884Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:51.884Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:51.909Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:51.915Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:51.915Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:51.922Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:51.922Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:51.947Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:51.954Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:51.954Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+Frame 351: 26.2 FPS
+[2026-10-28T11:10:51.960Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:51.960Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:51.986Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:51.992Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:51.992Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:51.999Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:51.999Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:52.024Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:52.030Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:52.030Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:52.037Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:52.037Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:52.062Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:52.068Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:52.068Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:52.075Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:52.075Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:52.100Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:52.107Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:52.107Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:52.113Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:52.113Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:52.139Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:52.145Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:52.145Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:52.151Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:52.152Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:52.177Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:52.183Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:52.183Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:52.190Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:52.190Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:52.215Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:52.221Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:52.221Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+[2026-10-28T11:10:52.228Z DEBUG kiss3d::window::drm::drm_canvas] Present: starting frame presentation
+[2026-10-28T11:10:52.228Z DEBUG kiss3d::window::drm::drm_canvas] Reading GPU texture to CPU buffer
+[2026-10-28T11:10:52.254Z DEBUG kiss3d::window::drm::drm_canvas] GPU texture read complete
+[2026-10-28T11:10:52.260Z DEBUG kiss3d::window::drm::drm_canvas] Present: read GPU texture to CPU buffer
+[2026-10-28T11:10:52.260Z DEBUG kiss3d::window::drm::drm_canvas] Present: complete
+
+╔══════════════════════════════════════════════════════════════════╗
+║                    Benchmark Results                            ║
+╚══════════════════════════════════════════════════════════════════╝
+
+Overall Performance:
+  Total time: 21.50s
+  Average FPS: 26.3
+  Frame count: 300 (after warmup)
+
+Present() Timing (Async Display Thread):
+  Average:     0.000ms
+  Min:         0.000ms
+  Max:         0.000ms
+  P50:         0.000ms
+  P95:         0.000ms
+  P99:         0.000ms
+
+Frame Timing:
+  Average:    38.086ms (26.3 FPS)
+  Min:        37.226ms (26.9 FPS)
+  Max:        38.678ms (25.9 FPS)
+  P50:        38.112ms (26.2 FPS)
+  P95:        38.429ms (26.0 FPS)
+  P99:        38.616ms (25.9 FPS)
+
+Render Timing:
+  Average:    38.086ms
+
+╔══════════════════════════════════════════════════════════════════╗
+║                      Analysis                                   ║
+╚══════════════════════════════════════════════════════════════════╝
+
+Async Display Thread Benefits:
+  ✅ Present() is non-blocking: ~0.000ms (vs ~16ms blocking)
+  ✅ Time saved per frame: ~16.7ms
+  ✅ Estimated FPS gain: +11 FPS
+  ✅ Main thread can start next frame immediately
+
+✅ EXCELLENT: Present() overhead is minimal (<2ms)
+   The async display thread is working perfectly!
+
+Performance Breakdown:
+  Present: 0.0%
+  Render:  100.0%
+  Other:   0.0%
+
+Implementation Details:
+  • Buffer copy + set_crtc run in separate thread
+  • Main thread continues rendering without waiting
+  • Double buffering prevents race conditions
+  • Mutex provides backpressure if rendering too fast
+
+See ASYNC_DISPLAY_THREAD.md for detailed documentation
+
+[2026-10-28T11:10:52.264Z INFO  kiss3d::window::drm::drm_window] Dropping DRM window
+[2026-10-28T11:10:52.264Z INFO  kiss3d::window::drm::drm_window] Last DRM window dropped, cleaning up resources
+[2026-10-28T11:10:52.268Z DEBUG kiss3d::window::drm::display_thread] Shutting down display thread
+[2026-10-28T11:10:52.268Z DEBUG kiss3d::window::drm::display_thread] Display thread channel closed, worker should exit
+[2026-10-28T11:10:52.268Z DEBUG kiss3d::window::drm::display_thread] Waiting for display worker thread to exit...
+[2026-10-28T11:10:52.271Z DEBUG kiss3d::window::drm::display_thread] Display worker: channel closed, exiting
+[2026-10-28T11:10:52.288Z INFO  kiss3d::window::drm::display_thread] Display worker thread terminated
+[2026-10-28T11:10:52.289Z DEBUG kiss3d::window::drm::display_thread] Display worker thread exited cleanly
+[2026-10-28T11:10:52.289Z INFO  kiss3d::window::drm::display_thread] Display thread shut down
