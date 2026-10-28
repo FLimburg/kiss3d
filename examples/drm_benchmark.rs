@@ -7,15 +7,21 @@
 //! DRM_DEVICE=/dev/dri/card1 cargo run --release --features drm --example drm_benchmark
 //! ```
 //!
-//! Options: `--light` turns shadows and transmission off, `--frames <n>` sets the
-//! number of measured frames (default 300, after 60 warm-up frames).
+//! Options:
+//! - `--no-shadows`, `--no-transmission`: turn that effect off; `--light` turns both off.
+//! - `--tonemap <none|reinhard|aces|agx|neutral|tony>`: tonemapping operator (default: kiss3d's).
+//! - `--split`: time rendering and presenting separately, and print per-pass GPU times
+//!   when the device supports timestamp queries.
+//! - `--frames <n>`: number of measured frames (default 300, after 60 warm-up frames).
 //!
 //! The scene (125 small cubes, one point light, orbit camera) is the one the former
 //! DRM backend's `drm_async_benchmark` used, so the numbers are comparable.
 
 #[cfg(target_os = "linux")]
 mod benchmark {
+    use kiss3d::post_processing::Tonemap;
     use kiss3d::prelude::*;
+    use std::collections::HashMap;
     use std::time::{Duration, Instant};
 
     const WARMUP_FRAMES: usize = 60;
@@ -29,11 +35,30 @@ mod benchmark {
         env_logger::init();
 
         let args: Vec<String> = std::env::args().collect();
-        let light = args.iter().any(|a| a == "--light");
-        let frames = args
-            .iter()
-            .position(|a| a == "--frames")
-            .and_then(|i| args.get(i + 1))
+        let has = |flag: &str| args.iter().any(|a| a == flag);
+        let light = has("--light");
+        let shadows = !(light || has("--no-shadows"));
+        let transmission = !(light || has("--no-transmission"));
+        let split = has("--split");
+        let value_of = |flag: &str| {
+            args.iter()
+                .position(|a| a == flag)
+                .and_then(|i| args.get(i + 1))
+                .cloned()
+        };
+        let tonemap = value_of("--tonemap").and_then(|name| match name.as_str() {
+            "none" => Some(Tonemap::None),
+            "reinhard" => Some(Tonemap::Reinhard),
+            "aces" => Some(Tonemap::Aces),
+            "agx" => Some(Tonemap::AgX),
+            "neutral" => Some(Tonemap::Neutral),
+            "tony" => Some(Tonemap::TonyMcMapface),
+            _ => {
+                eprintln!("Unknown tonemap '{}', using the default", name);
+                None
+            }
+        });
+        let frames = value_of("--frames")
             .and_then(|n| n.parse().ok())
             .unwrap_or(300usize);
 
@@ -46,9 +71,10 @@ mod benchmark {
                 return;
             }
         };
-        if light {
-            window.set_shadows_enabled(false);
-            window.set_transmission_enabled(false);
+        window.set_shadows_enabled(shadows);
+        window.set_transmission_enabled(transmission);
+        if let Some(tonemap) = tonemap {
+            window.set_tonemap(tonemap);
         }
 
         let mut camera = OrbitCamera3d::default();
@@ -86,17 +112,29 @@ mod benchmark {
         }
 
         println!(
-            "{}x{}, {} cubes, profile: {}, {} warm-up + {} measured frames",
+            "{}x{}, {} cubes, shadows: {}, transmission: {}, tonemap: {:?}, {} warm-up + {} measured frames",
             window.width(),
             window.height(),
             cubes.len(),
-            if light { "light" } else { "default" },
+            shadows,
+            transmission,
+            window.hdr_settings().tonemap,
             WARMUP_FRAMES,
             frames
         );
 
+        println!(
+            "Clustered lighting supported: {}",
+            Context::get().supports_clustered_lighting()
+        );
+
         let rot = Quat::from_axis_angle(Vec3::new(0.3, 0.7, 0.2).normalize(), 0.01);
         let mut frame_times = Vec::with_capacity(frames);
+        let mut render_times = Vec::with_capacity(frames);
+        let mut present_times = Vec::with_capacity(frames);
+        let mut submit_times = Vec::with_capacity(frames);
+        let mut gpu_times = Vec::with_capacity(frames);
+        let mut gpu_passes: HashMap<&'static str, (Duration, u32)> = HashMap::new();
         let start = Instant::now();
 
         for frame in 0..WARMUP_FRAMES + frames {
@@ -104,11 +142,36 @@ mod benchmark {
             for cube in &mut cubes {
                 cube.rotate(rot);
             }
-            if !window.render_3d(&mut scene, &mut camera).await {
+            let running = if split {
+                // `Window::render_3d` renders without presenting; present separately.
+                let render_start = Instant::now();
+                let running = Window::render_3d(&mut window, &mut scene, &mut camera).await;
+                let present_start = Instant::now();
+                window.present();
+                if frame >= WARMUP_FRAMES {
+                    render_times.push(present_start - render_start);
+                    present_times.push(present_start.elapsed());
+                }
+                running
+            } else {
+                window.render_3d(&mut scene, &mut camera).await
+            };
+            if !running {
                 break;
             }
             if frame >= WARMUP_FRAMES {
                 frame_times.push(frame_start.elapsed());
+                if let Some(timings) = window.render_timings() {
+                    submit_times.push(timings.cpu_submit);
+                    if let Some(steps) = &timings.gpu_steps {
+                        gpu_times.push(timings.gpu_total().unwrap_or_default());
+                        for (name, duration) in steps {
+                            let entry = gpu_passes.entry(*name).or_default();
+                            entry.0 += *duration;
+                            entry.1 += 1;
+                        }
+                    }
+                }
             }
         }
 
@@ -135,6 +198,35 @@ mod benchmark {
             ms(percentile(&frame_times, 0.99)),
             ms(*frame_times.last().unwrap()),
         );
+
+        if let Some(timings) = window.render_timings() {
+            println!("Last frame: {}", timings);
+        }
+
+        let average = |times: &[Duration]| {
+            (!times.is_empty()).then(|| ms(times.iter().sum::<Duration>() / times.len() as u32))
+        };
+        if split {
+            println!(
+                "Split ms (avg): render {:.2}, present {:.2}",
+                average(&render_times).unwrap_or_default(),
+                average(&present_times).unwrap_or_default()
+            );
+        }
+        if let Some(submit) = average(&submit_times) {
+            println!("CPU submit ms (avg): {:.2}", submit);
+        }
+        match average(&gpu_times) {
+            Some(gpu) => {
+                println!("GPU pass time ms (avg, sum of timed passes): {:.2}", gpu);
+                let mut passes: Vec<_> = gpu_passes.into_iter().collect();
+                passes.sort_by_key(|(_, (total, count))| std::cmp::Reverse(*total / *count));
+                for (name, (total, count)) in passes.iter().take(8) {
+                    println!("  {:<24} {:.2} ms", name, ms(*total / *count));
+                }
+            }
+            None => println!("GPU pass times: not available on this device"),
+        }
     }
 }
 

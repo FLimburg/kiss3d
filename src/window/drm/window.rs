@@ -27,6 +27,13 @@ use std::ops::{Deref, DerefMut};
 /// other `render*` methods of [`Window`] (such as `render_3d_with_chain`) do not
 /// present: call [`present`](Self::present) after them.
 ///
+/// # Performance on a Raspberry Pi 4
+///
+/// The GPU is the bottleneck, not the readback or the display. On a Pi 4 (V3D 4.2) at
+/// 1024x600, shadow mapping alone costs about 55 ms per frame for 125 cubes and one point
+/// light (about 11 FPS); with `set_shadows_enabled(false)` the same scene runs at about
+/// 30 FPS. Turn shadows off there. See `examples/drm_benchmark.rs`.
+///
 /// # Example
 /// ```no_run
 /// use kiss3d::prelude::*;

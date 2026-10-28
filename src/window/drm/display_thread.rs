@@ -11,6 +11,7 @@ use drm::control::dumbbuffer::DumbBuffer;
 use drm::control::{connector, crtc, framebuffer, Device as ControlDevice, Mode};
 use std::sync::mpsc::{sync_channel, Receiver, SyncSender};
 use std::thread::{self, JoinHandle};
+use std::time::{Duration, Instant};
 
 /// A frame to display.
 pub struct DisplayCommand {
@@ -88,18 +89,32 @@ impl DisplayThread {
         // mapped dumb buffer is typically uncached memory, slow for scattered writes.
         let mut row = vec![0u8; width as usize * 4];
 
-        while let Ok(command) = receiver.recv() {
+        // Time spent per activity, logged on shutdown: a worker that is mostly idle is
+        // not what limits the frame rate.
+        let mut frames = 0u32;
+        let (mut idle, mut copy, mut set_crtc) = (Duration::ZERO, Duration::ZERO, Duration::ZERO);
+
+        loop {
+            let wait_start = Instant::now();
+            let Ok(command) = receiver.recv() else {
+                break;
+            };
+            idle += wait_start.elapsed();
+
             let (dumb_buffer, fb) = if use_front {
                 (&mut dumb_buffer_front, fb_front)
             } else {
                 (&mut dumb_buffer_back, fb_back)
             };
 
+            let copy_start = Instant::now();
             if let Err(e) = Self::copy_to_dumb_buffer(&card, dumb_buffer, &command, &mut row) {
                 log::error!("Display worker: failed to copy to dumb buffer: {}", e);
                 continue;
             }
+            copy += copy_start.elapsed();
 
+            let set_crtc_start = Instant::now();
             if let Err(e) = card.set_crtc(
                 config.crtc,
                 Some(fb),
@@ -111,9 +126,22 @@ impl DisplayThread {
                 log::error!("Lost DRM master (another process took control of display)");
             }
 
+            set_crtc += set_crtc_start.elapsed();
+            frames += 1;
+
             use_front = !use_front;
         }
         log::debug!("Display worker: channel closed, exiting");
+        if frames > 0 {
+            let avg_ms = |d: Duration| d.as_secs_f64() * 1000.0 / frames as f64;
+            log::info!(
+                "Display worker: {} frames, avg per frame: {:.2} ms idle, {:.2} ms copy, {:.2} ms set_crtc",
+                frames,
+                avg_ms(idle),
+                avg_ms(copy),
+                avg_ms(set_crtc)
+            );
+        }
 
         if let Err(e) = card.destroy_framebuffer(fb_front) {
             log::warn!("Failed to destroy front framebuffer: {}", e);
