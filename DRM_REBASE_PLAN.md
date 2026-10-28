@@ -117,7 +117,7 @@ Spike basis: `upstream/master` at `03727cd2` (v0.47.0, 2026-10-04), freshly fetc
 | 2 | Baseline on Pi with `339de50a`: adapter info/limits, frame rate on a fixed scene and resolution | S (needs Pi) | numbers in Measurements log | 0 |
 | 3 | Branch `drm` off `upstream/master`; add `drm` feature and dependency; cfg-gated `mod drm` | S | `cargo check` unchanged without feature | 1 |
 | 4 | Port `card.rs`, `display_thread.rs`, KMS helpers; replace the old canvas types; fix for wgpu 30 where touched | M | `cargo check --features drm` on Linux | 3 |
-| 5 | Tier 1: `DrmWindow` (headless `Window` + `snap_begin`/`snap_finish` + display thread); offscreen-to-file mode for tests | M | example renders to the display on a Linux box; `snap_image` matches | 4 |
+| 5 | **Done.** Tier 1: `DrmWindow` (headless `Window` + `snap_begin`/`snap_finish` + display thread); offscreen-to-file mode for tests | M | example renders to the display on a Linux box; `snap_image` matches | 4 |
 | 6 | Pi bring-up and measurement vs baseline; choose light-effects profile; decide Tier 2 if frame rate is worse than baseline | M (needs Pi) | numbers recorded | 5, 2 |
 | 7 | Tier 2 (only if needed): raw readback API; consider upstream PR | M | frame rate within target | 6 |
 | 8 | **Post-v1:** input: injection method on canvas plus evdev reader | M | cameras respond on Pi | 9 |
@@ -134,6 +134,19 @@ Spike basis: `upstream/master` at `03727cd2` (v0.47.0, 2026-10-04), freshly fetc
 - **Verification (Mac, cross-compiled):** `cargo check --lib --tests --target aarch64-unknown-linux-gnu --features drm` passes, no warnings; `cargo clippy` shows nothing for `drm/`; `cargo fmt --check` clean; host `cargo check --lib` (no feature) passes. **Not run:** the unit tests (they compile but were not executed; `BufferPool` and `Card` tests need a Linux host) and anything on the Pi.
 - **Build note:** `Cargo.lock` is git-ignored, so a fresh resolution picked `glamx 0.3.0` with `glam 0.33.1`, which lacks the `glam::camera` module upstream uses. `cargo update -p glamx` (to `glamx 0.3.1`, `glam 0.33.12`) fixes it. Any other checkout, including the Pi, needs the same step, or the ignored lockfile must be copied along. Worth reporting upstream.
 - **For phase 5:** `DisplayCommand.pixel_data` expects XRGB8888 (B, G, R, X in memory), whereas `Window::snap_finish` yields RGB (3 bytes per pixel, top-left origin). Do the RGB to XRGB expansion on the display worker thread, not on the render thread, e.g. by adding a pixel-format field to `DisplayCommand`.
+
+- **Phase 5 done (2026-10-28):** `DrmWindow` (`src/window/drm/window.rs`, re-exported as `kiss3d::window::DrmWindow` and `DrmError`) wraps `Window::new_headless_with_setup` (single-sampled) and presents with `snap_finish` then `snap_begin` after every `render*` call, one frame behind. `DisplayThread` now takes RGB frames, converts to XRGB8888 per row in cached memory on the worker thread, honors the dumb-buffer pitch; the old `BufferPool` and recycler were removed (unused). New `examples/drm_benchmark.rs` (feature `drm`, same scene as the old benchmark, real frame-time statistics, `--light`, `--frames`). Wired into `Cargo.toml` (`[[example]] required-features`) and `src/window/mod.rs`.
+- **Phase 5 verification:** Mac cross-check (aarch64, lib, tests, examples), clippy and fmt clean. **On the Pi:** release build of `drm_benchmark` succeeded (38 min, `CARGO_BUILD_JOBS=2`, 0 warnings), runs on the V3D (log line `Rendering on "V3D 4.2.14.0" (IntegratedGpu, Vulkan)`), no errors, `get_throttled=0x0` before and after. Unit tests (RGB to XRGB row conversion) were not run on the Pi. **Not verified:** that the picture on the HDMI display is correct (colors, orientation); only the logs were checked.
+- **Pi results, new build, 1024x600, 125 cubes, 360 frames (60 warm-up), logs in `pi4_baseline/`:**
+
+| Profile | Avg FPS | Frame time ms (avg / min / p50 / p95 / p99 / max) | Result vs targets |
+|---|---|---|---|
+| light (shadows and transmission off) | **30.2** | 33.12 / 28.03 / 33.32 / 34.26 / 36.70 / 40.26 | Meets the 30 FPS target, with almost no margin (p95 is 29.2 FPS) |
+| default | **11.6** | 86.57 / 83.89 / 86.59 / 88.30 / 89.78 / 90.80 | Shadows and/or transmission cost about 53 ms per frame |
+| old pipeline (baseline) | 26.3 | 38.09 / 37.23 / 38.11 / 38.43 / 38.62 / 38.68 | reference |
+
+  The CPU was warm at the start of each run (about 69 to 70 C after the build), no throttling.
+- **FPS target rule:** target stays 30 FPS for the light profile. If profiling later shows the hardware cannot reach it, fall back to the old baseline of 26.3 FPS (user decision 2026-10-28). Not needed so far.
 
 ## Risks and dependencies
 
