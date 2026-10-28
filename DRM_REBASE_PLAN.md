@@ -123,6 +123,18 @@ Spike basis: `upstream/master` at `03727cd2` (v0.47.0, 2026-10-04), freshly fetc
 | 8 | **Post-v1:** input: injection method on canvas plus evdev reader | M | cameras respond on Pi | 9 |
 | 9 | Docs; CI for `--features drm` compile on Linux; rebase dry run on `upstream/master`; decide upstream PR. **Ends v1.** | S | `git rebase upstream/master` succeeds | 6 |
 
+## Progress log
+
+- **Phase 3 done (2026-10-28):** `drm` feature plus Linux-only optional `drm = "0.14.1"` dependency in `Cargo.toml`; `#[cfg(all(feature = "drm", target_os = "linux"))] mod drm;` in `src/window/mod.rs`. Only those two upstream files are touched.
+- **Phase 4 done (2026-10-28):** ported to `src/window/drm/`:
+  - `card.rs` and `display_thread.rs`: verbatim from `origin/master` (`339de50a`); no wgpu dependency, nothing needed fixing for wgpu 30.
+  - `kms.rs`: connector, CRTC and mode discovery plus capability check, extracted from the old `DrmCanvas` into free functions (behavior unchanged; `select_best_mode` now uses `.first().copied().ok_or_else(..)` instead of `unwrap`).
+  - `error.rs`: `DrmError` (renamed from `DrmCanvasError`, wgpu-specific variants dropped).
+  - `mod.rs`: `#![allow(dead_code)]` until the consumer (`DrmWindow`, phase 5) exists; remove it then.
+- **Verification (Mac, cross-compiled):** `cargo check --lib --tests --target aarch64-unknown-linux-gnu --features drm` passes, no warnings; `cargo clippy` shows nothing for `drm/`; `cargo fmt --check` clean; host `cargo check --lib` (no feature) passes. **Not run:** the unit tests (they compile but were not executed; `BufferPool` and `Card` tests need a Linux host) and anything on the Pi.
+- **Build note:** `Cargo.lock` is git-ignored, so a fresh resolution picked `glamx 0.3.0` with `glam 0.33.1`, which lacks the `glam::camera` module upstream uses. `cargo update -p glamx` (to `glamx 0.3.1`, `glam 0.33.12`) fixes it. Any other checkout, including the Pi, needs the same step, or the ignored lockfile must be copied along. Worth reporting upstream.
+- **For phase 5:** `DisplayCommand.pixel_data` expects XRGB8888 (B, G, R, X in memory), whereas `Window::snap_finish` yields RGB (3 bytes per pixel, top-left origin). Do the RGB to XRGB expansion on the display worker thread, not on the render thread, e.g. by adding a pixel-format field to `DisplayCommand`.
+
 ## Risks and dependencies
 
 | Risk | Impact | Mitigation |
