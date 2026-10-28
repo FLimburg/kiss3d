@@ -99,7 +99,7 @@ Spike basis: `upstream/master` at `03727cd2` (v0.47.0, 2026-10-04), freshly fetc
 - [ ] Without `drm`: `cargo check --all-targets` and `cargo test --lib` pass as on upstream.
 - [ ] With `drm` on Linux: `cargo check --all-targets --features drm` passes.
 - [ ] `rendering.rs`, `window.rs` and `wgpu_canvas.rs` are unchanged unless a measured need justifies Tier 2/3 or the input injection point.
-- [ ] On the Raspberry Pi: the new build renders the benchmark scene (125 cubes, one point light, 1024x600) to the display via DRM/KMS. Baseline is 26.3 FPS with the old pipeline. **Target to be agreed** after the first measurement: because upstream always uses an HDR film and tonemap pass, propose reporting FPS for (a) default settings and (b) a light profile (shadows and transmission off), with a floor such as 20 FPS for (b) instead of parity.
+- [ ] On the Raspberry Pi: the new build renders the benchmark scene (125 cubes, one point light, 1024x600) to the display via DRM/KMS at an average of **at least 30 FPS** (target set by user 2026-10-28), measured with the light profile (shadows and transmission off). Also report FPS with default settings. The old pipeline measured 26.3 FPS, so the target is **above** the baseline and requires the 38 ms frame-time bottleneck to be diagnosed (Phase 6).
 
 ## Out of scope (for now)
 
@@ -127,6 +127,7 @@ Spike basis: `upstream/master` at `03727cd2` (v0.47.0, 2026-10-04), freshly fetc
 
 | Risk | Impact | Mitigation |
 |---|---|---|
+| 30 FPS target is above the 26.3 FPS baseline, and the old frame time is flat at 38 ms (bottleneck undiagnosed: GPU fill, readback, or display thread) | Target missed even if the port is correct | Phase 6: profile GPU time (timestamp queries), readback and display-thread time separately; Tier 2 raw readback; lower render resolution or effects |
 | Upstream readback CPU cost (RGB conversion, double row reversal, RGB-to-XRGB expansion, one frame in flight) on a Pi | Lower frame rate than the old pipeline | Measure in Phase 6; Tier 2 raw readback if needed |
 | Upstream HDR pipeline (`Rgba16Float`, OIT, shadows, transmission) exceeds V3D capability or speed | DRM slow or unusable on Pi | Phase 2 baseline; light profile via runtime toggles; HDR film cannot be disabled, so a failure there needs an upstream-facing change |
 | A render pass needs more than 4 color attachments | Pipeline creation error on Pi | Follow-up check; fix per pass |
