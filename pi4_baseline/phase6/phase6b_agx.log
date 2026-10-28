@@ -1,0 +1,29 @@
+[2026-10-28T13:52:40Z INFO  kiss3d::window::drm::kms] Querying DRM display resources
+[2026-10-28T13:52:40Z INFO  kiss3d::window::drm::kms] Found connected connector: HDMIA (id: connector::Handle(90))
+[2026-10-28T13:52:40Z INFO  kiss3d::window::drm::kms] Selected CRTC crtc::Handle(88) for connector connector::Handle(90) via encoder encoder::Handle(89)
+[2026-10-28T13:52:40Z INFO  kiss3d::window::drm::kms] Selected CRTC: crtc::Handle(88)
+[2026-10-28T13:52:40Z INFO  kiss3d::window::drm::kms] Selected mode: 1024x600 @ 60Hz
+[2026-10-28T13:52:40Z WARN  wgpu_core::instance] Missing downlevel flags: DownlevelFlags(FULL_DRAW_INDEX_UINT32)
+    The underlying API or device in use does not support enough features to be a fully compliant implementation of WebGPU. A subset of the features can still be used. If you are running this program on native and not in a browser and wish to limit the features you use to the supported subset, call Adapter::downlevel_properties or Device::downlevel_properties to get a listing of the features the current platform supports.
+[2026-10-28T13:52:40Z WARN  wgpu_core::instance] DownlevelCapabilities {
+        flags: DownlevelFlags(
+            COMPUTE_SHADERS | FRAGMENT_WRITABLE_STORAGE | INDIRECT_EXECUTION | BASE_VERTEX | READ_ONLY_DEPTH_STENCIL | NON_POWER_OF_TWO_MIPMAPPED_TEXTURES | CUBE_ARRAY_TEXTURES | COMPARISON_SAMPLERS | INDEPENDENT_BLEND | VERTEX_STORAGE | ANISOTROPIC_FILTERING | FRAGMENT_STORAGE | MULTISAMPLED_SHADING | DEPTH_TEXTURE_AND_BUFFER_COPIES | WEBGPU_TEXTURE_FORMAT_SUPPORT | BUFFER_BINDINGS_NOT_16_BYTE_ALIGNED | UNRESTRICTED_INDEX_BUFFER | DEPTH_BIAS_CLAMP | VIEW_FORMATS | UNRESTRICTED_EXTERNAL_TEXTURE_COPIES | SURFACE_VIEW_FORMATS | NONBLOCKING_QUERY_RESOLVE | SHADER_F16_IN_F32 | MSL2_1 | TEXTURE_COMPRESSION,
+        ),
+        limits: DownlevelLimits,
+        shader_model: Sm5,
+    }
+[2026-10-28T13:52:41Z INFO  kiss3d::window::drm::window] Rendering on "V3D 4.2.14.0" (IntegratedGpu, Vulkan)
+[2026-10-28T13:52:41Z INFO  kiss3d::window::drm::display_thread] Display thread started with bounded channel (capacity 1)
+1024x600, 125 cubes, shadows: false, transmission: false, tonemap: AgX, 60 warm-up + 300 measured frames
+Total time: 13.02s
+Average FPS (measured frames): 28.8
+Frame time ms: avg 34.78, min 30.15, p50 34.92, p95 35.61, p99 40.43, max 41.82
+Split ms (avg): render 11.50, present 23.23
+CPU submit ms (avg): 7.96
+GPU pass time ms (avg, sum of timed passes): 30.14
+  opaque                   18.36 ms
+  tonemap                  10.26 ms
+  clear                    1.51 ms
+[2026-10-28T13:52:54Z INFO  kiss3d::window::drm::display_thread] Display worker: 359 frames, avg per frame: 23.63 ms idle, 3.03 ms copy, 8.89 ms set_crtc
+[2026-10-28T13:52:54Z INFO  kiss3d::window::drm::display_thread] Display worker thread terminated
+[2026-10-28T13:52:54Z INFO  kiss3d::window::drm::display_thread] Display thread shut down

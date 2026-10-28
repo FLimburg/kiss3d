@@ -99,7 +99,7 @@ Spike basis: `upstream/master` at `03727cd2` (v0.47.0, 2026-10-04), freshly fetc
 - [ ] Without `drm`: `cargo check --all-targets` and `cargo test --lib` pass as on upstream.
 - [ ] With `drm` on Linux: `cargo check --all-targets --features drm` passes.
 - [ ] `rendering.rs`, `window.rs` and `wgpu_canvas.rs` are unchanged unless a measured need justifies Tier 2/3 or the input injection point.
-- [ ] On the Raspberry Pi: the new build renders the benchmark scene (125 cubes, one point light, 1024x600) to the display via DRM/KMS at an average of **at least 30 FPS** (target set by user 2026-10-28), measured with the light profile (shadows and transmission off). Also report FPS with default settings. The old pipeline measured 26.3 FPS, so the target is **above** the baseline and requires the 38 ms frame-time bottleneck to be diagnosed (Phase 6).
+- [x] (met on average, thin margin; see Phase 6) On the Raspberry Pi: the new build renders the benchmark scene (125 cubes, one point light, 1024x600) to the display via DRM/KMS at an average of **at least 30 FPS** (target set by user 2026-10-28), measured with the light profile (shadows and transmission off). Also report FPS with default settings. The old pipeline measured 26.3 FPS, so the target is **above** the baseline and requires the 38 ms frame-time bottleneck to be diagnosed (Phase 6).
 
 ## Out of scope (for now)
 
@@ -118,8 +118,8 @@ Spike basis: `upstream/master` at `03727cd2` (v0.47.0, 2026-10-04), freshly fetc
 | 3 | Branch `drm` off `upstream/master`; add `drm` feature and dependency; cfg-gated `mod drm` | S | `cargo check` unchanged without feature | 1 |
 | 4 | Port `card.rs`, `display_thread.rs`, KMS helpers; replace the old canvas types; fix for wgpu 30 where touched | M | `cargo check --features drm` on Linux | 3 |
 | 5 | **Done.** Tier 1: `DrmWindow` (headless `Window` + `snap_begin`/`snap_finish` + display thread); offscreen-to-file mode for tests | M | example renders to the display on a Linux box; `snap_image` matches | 4 |
-| 6 | Pi bring-up and measurement vs baseline; choose light-effects profile; decide Tier 2 if frame rate is worse than baseline | M (needs Pi) | numbers recorded | 5, 2 |
-| 7 | Tier 2 (only if needed): raw readback API; consider upstream PR | M | frame rate within target | 6 |
+| 6 | **Done.** Pi bring-up and measurement vs baseline; choose light-effects profile; decide Tier 2 if frame rate is worse than baseline | M (needs Pi) | numbers recorded | 5, 2 |
+| 7 | **Not needed** (GPU-bound, see progress log). Tier 2: raw readback API; consider upstream PR | M | frame rate within target | 6 |
 | 8 | **Post-v1:** input: injection method on canvas plus evdev reader | M | cameras respond on Pi | 9 |
 | 9 | Docs; CI for `--features drm` compile on Linux; rebase dry run on `upstream/master`; decide upstream PR. **Ends v1.** | S | `git rebase upstream/master` succeeds | 6 |
 
@@ -148,12 +148,46 @@ Spike basis: `upstream/master` at `03727cd2` (v0.47.0, 2026-10-04), freshly fetc
   The CPU was warm at the start of each run (about 69 to 70 C after the build), no throttling.
 - **FPS target rule:** target stays 30 FPS for the light profile. If profiling later shows the hardware cannot reach it, fall back to the old baseline of 26.3 FPS (user decision 2026-10-28). Not needed so far.
 
+- **Phase 6 done (2026-10-28):** measured with `examples/drm_benchmark.rs` (new flags `--no-shadows`, `--no-transmission`, `--tonemap`, `--split`; prints per-pass GPU times and the display worker's busy/idle time). Pi 4, V3D, 1024x600, 125 cubes, one point light, 300 measured frames per run, no throttling (temperature 61 to 71 C). Logs: `pi4_baseline/phase6/`.
+
+  **1. Which effect costs what** (`--split`; GPU passes from timestamp queries):
+
+  | Config | FPS | Frame ms avg / p95 | CPU render | present | CPU submit | GPU passes total | shadows pass | opaque | tonemap |
+  |---|---|---|---|---|---|---|---|---|---|
+  | default | 11.1 | 90.07 / 91.30 | 72.55 | 17.47 | 43.28 | 58.23 | 19.73 | 27.92 | 8.51 |
+  | no shadows | 30.3 | 32.97 / 35.16 | 11.46 | 21.46 | 7.86 | 28.33 | - | 18.35 | 8.46 |
+  | no transmission | 11.2 | 89.28 / 92.10 | 71.80 | 17.44 | 42.83 | 58.32 | 19.65 | 27.92 | 8.49 |
+  | light (both off) | 30.4 | 32.93 / 34.71 | 11.27 | 21.62 | 7.76 | 28.29 | - | 18.33 | 8.46 |
+  | light, repeat | 30.2 | 33.08 / 35.27 | 11.49 | 21.54 | 7.89 | 28.36 | - | 18.36 | 8.45 |
+
+  Shadows cost about 60 ms per frame: the shadow pass (19.7 ms GPU, about 35 ms extra CPU submit for 6 cube-map faces of 125 cubes) plus about 9.5 ms extra in the opaque pass for sampling the atlas. Transmission makes no difference in this scene (it has no transmissive objects; scenes with glass were not measured). Run-to-run spread is small (30.2 to 30.4 FPS); the earlier default-profile run gave 11.6 FPS versus 11.1 here, so treat about 0.5 FPS as noise.
+
+  **2. The bottleneck is the GPU, not the readback or the display (Tier 2 not needed).** In the light profile the GPU passes take 28.3 ms (opaque 18.4, tonemap 8.5, clear 1.5) for a 33 ms frame; the CPU is ahead of the GPU (render call 11.5 ms), so the 21 ms "present" is the render thread waiting for the GPU. The display worker is busy only about 12 ms per frame (copy 3.0 to 3.4 ms, `set_crtc` 8.3 to 8.9 ms) and idle the rest (about 21 to 23 ms in steady state; the logged averages of 22 to 50 ms include the startup wait before the first frame). Phase 7 (raw readback) is therefore **not needed** for this scene and resolution; reopen it only if a CPU-bound scenario appears.
+
+  **3. Other levers** (light profile):
+
+  | Variation | FPS | Frame ms avg / p95 | Notes |
+  |---|---|---|---|
+  | tonemap Neutral (default) | 30.1 | 33.20 / 35.52 | tonemap pass 8.47 ms |
+  | tonemap None | 31.2 | 32.10 / 35.64 | 7.43 ms; clamps instead of tonemapping |
+  | tonemap Reinhard | 31.5 | 31.80 / 35.24 | 7.13 ms |
+  | tonemap AgX | 28.8 | 34.78 / 35.61 | 10.26 ms, slower |
+  | clustered lighting on (Pi supports it) | 29.9, 30.1 | 33.48 / 36.03, 33.22 / 35.17 | active even with one light; its compute passes are not in the timed passes |
+  | clustered lighting off (temporary local patch, not in the repo) | 31.1, 30.9 | 32.11 / 32.86, 32.35 / 34.58 | CPU render 11.3 to 9.2 ms; GPU passes unchanged; upstream has no switch for this |
+
+  The tonemap pass costs 7 to 8 ms even for `None`, so the cost is memory/format bound (1024x600 `Rgba16Float` in, `Bgra8Unorm` out), not ALU bound. The 17 to 18 ms opaque pass for about 1,500 triangles is also high, which points at per-pixel cost on the V3D (HDR film, 32-bit depth, lighting).
+
+  **4. Decisions and status:**
+  - DRM light profile for a Pi 4: **shadows off**; everything else at upstream defaults. Documented in the `DrmWindow` docs.
+  - The 30 FPS target is **met on average** (29.9 to 31.5 FPS across the light-profile runs) but with almost no margin: p95 frame time is 33 to 36 ms (about 28 to 30 FPS). The fallback to the 26.3 FPS baseline is **not triggered**.
+  - More headroom would need a lower GPU cost per frame. Untested options, largest expected effect first: render at a lower resolution than the display and scale (the GPU cost should fall roughly with the pixel count; needs a scaling step in the display thread or a smaller KMS mode); Reinhard tonemap (+1.4 FPS, changes the look); an upstream switch for clustered lighting (+1 FPS).
+
 ## Risks and dependencies
 
 | Risk | Impact | Mitigation |
 |---|---|---|
-| 30 FPS target is above the 26.3 FPS baseline, and the old frame time is flat at 38 ms (bottleneck undiagnosed: GPU fill, readback, or display thread) | Target missed even if the port is correct | Phase 6: profile GPU time (timestamp queries), readback and display-thread time separately; Tier 2 raw readback; lower render resolution or effects |
-| Upstream readback CPU cost (RGB conversion, double row reversal, RGB-to-XRGB expansion, one frame in flight) on a Pi | Lower frame rate than the old pipeline | Measure in Phase 6; Tier 2 raw readback if needed |
+| 30 FPS target is above the 26.3 FPS baseline, and the old frame time is flat at 38 ms (bottleneck undiagnosed: GPU fill, readback, or display thread) | Target missed even if the port is correct | **Mostly retired (Phase 6):** bottleneck diagnosed (GPU passes), target met on average with shadows off; margin is thin. Further headroom: lower render resolution, Reinhard tonemap, upstream clustered-lighting switch |
+| Upstream readback CPU cost (RGB conversion, double row reversal, RGB-to-XRGB expansion, one frame in flight) on a Pi | Lower frame rate than the old pipeline | **Retired (Phase 6):** the readback overlaps GPU work and the GPU is the bottleneck; no Tier 2 needed |
 | Upstream HDR pipeline (`Rgba16Float`, OIT, shadows, transmission) exceeds V3D capability or speed | DRM slow or unusable on Pi | Phase 2 baseline; light profile via runtime toggles; HDR film cannot be disabled, so a failure there needs an upstream-facing change |
 | A render pass needs more than 4 color attachments | Pipeline creation error on Pi | Follow-up check; fix per pass |
 | evdev (post-v1) needs canvas internals | Forces an upstream-file change or an upstream PR | Deferred; keep the injection method tiny and generic when done |
