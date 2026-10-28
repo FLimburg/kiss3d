@@ -29,6 +29,10 @@ include = [
 name = "kiss3d"
 path = "src/lib.rs"
 
+[[example]]
+name = "drm_benchmark"
+required-features = ["drm"]
+
 [features]
 # `rfd` powers the inspector's native "Open…" image dialogs (unused on wasm, which
 # falls back to a path text field).
