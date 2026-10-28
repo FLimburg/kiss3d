@@ -3,6 +3,8 @@
 mod aov;
 mod canvas;
 mod drawing;
+#[cfg(all(feature = "drm", target_os = "linux"))]
+mod drm;
 #[cfg(feature = "egui")]
 mod egui_integration;
 mod events;
